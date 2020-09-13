@@ -1,10 +1,10 @@
 import os
 
-import pandas as pd
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
 
-from preprocess import Preprocess
 from utils import *
-
 
 if __name__ == "__main__":
     folder = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03"
@@ -21,8 +21,18 @@ if __name__ == "__main__":
 
     # load / save preprocessed data
     preproc_path = os.path.join(folder, "data.pkl")
-    # save_pickle(posts, preproc_path)
-    posts = load_pickle(preproc_path)
 
-    for post in posts:
-        print(post)
+    # save_pickle(posts, preproc_path)
+    data = load_pickle(preproc_path)
+    data = np.array(data)
+
+    # vectorize
+    vect = TfidfVectorizer()
+    vect_data = vect.fit_transform(data)
+
+    # find cosine for a few specific posts
+    cos_sim = linear_kernel(vect_data[1], vect_data).flatten()
+    sim_idx = cos_sim.argsort()[:-6:-1]
+
+    print(cos_sim[sim_idx])
+    print(data[sim_idx])
