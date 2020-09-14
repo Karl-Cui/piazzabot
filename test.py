@@ -1,6 +1,6 @@
 import os
 
-import numpy as np
+from model.cosine_similarity import CosineSimilarity
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 
@@ -24,15 +24,7 @@ if __name__ == "__main__":
 
     # save_pickle(posts, preproc_path)
     data = load_pickle(preproc_path)
-    data = np.array(data)
 
-    # vectorize
-    vect = TfidfVectorizer()
-    vect_data = vect.fit_transform(data)
-
-    # find cosine for a few specific posts
-    cos_sim = linear_kernel(vect_data[1], vect_data).flatten()
-    sim_idx = cos_sim.argsort()[:-6:-1]
-
-    print(cos_sim[sim_idx])
-    print(data[sim_idx])
+    cos_sim = CosineSimilarity()
+    cos_sim.fit(data)
+    print(cos_sim.find_similar("can someone explain to me what BST property is?", top_n=10))
