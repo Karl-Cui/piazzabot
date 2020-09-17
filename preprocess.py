@@ -1,4 +1,5 @@
 import re
+import html
 
 import spacy
 
@@ -17,6 +18,7 @@ class Preprocess:
         Notes:
         - we use regex to remove the URLs because spacy often interprets python file names as URLs
         """
+        doc = html.unescape(doc)    # substitute out HTML entities
         doc = re.sub(r"https?://\S+", " ", doc)  # remove URLs
 
         doc = self.nlp(doc)         # spacy magic
