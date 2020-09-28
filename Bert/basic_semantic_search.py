@@ -1,7 +1,7 @@
 import pandas as pd
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
-import utils as utils
+import utils
 
 class BertSemanticSearch:
 
@@ -42,9 +42,9 @@ class BertSemanticSearch:
                 print(self.corpus[idx].strip(), "(Score: %.4f)" % (cos_scores[idx]))
 
 if __name__ == "__main__":
-    csv_file_name = r"C:\Users\sohai\Documents\Uni 2020\csc392\CSC108&148v2\CSC108&148v2\csc108h5f_fall2019_2020-05-03\anon.contributions.csv"
-    path_corpus=  r"C:\Users\sohai\Documents\Uni 2020\csc392\CSC108&148v2\CSC108&148v2\csc108h5f_fall2019_2020-05-03\corpus.pkl"
-    path_corpus_embeddings=  r"C:\Users\sohai\Documents\Uni 2020\csc392\CSC108&148v2\CSC108&148v2\csc108h5f_fall2019_2020-05-03\corpus_embeddings.pkl"
+    csv_file_name = r"C:\Users\sohai\Documents\Uni 2020\csc392\CSC108&148v2\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
+    path_corpus=  r"C:\Users\sohai\Documents\Uni 2020\csc392\CSC108&148v2\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus.pkl"
+    path_corpus_embeddings=  r"C:\Users\sohai\Documents\Uni 2020\csc392\CSC108&148v2\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus_embeddings.pkl"
     df = pd.read_csv(csv_file_name)
     df.dropna(subset=["Submission HTML Removed"], inplace=True)
     corpus = df["Submission HTML Removed"].tolist()
