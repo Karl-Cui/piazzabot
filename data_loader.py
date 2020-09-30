@@ -50,6 +50,9 @@ class DataLoader:
         # filter by only relevant fields
         posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post']]
 
+        # drop if any field contains invalid values
+        posts.dropna(inplace=True)
+
         if include_index:
             for row in posts.itertuples(index=True):
                 # index 0 is the original index
