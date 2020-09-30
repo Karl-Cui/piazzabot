@@ -45,3 +45,15 @@ class CosineSimilarity:
         sim_idx = cos_sim.argsort()[:-top_n:-1]
 
         return self.data[sim_idx]
+
+    #
+    #   Getters and setters
+    #
+
+    def get_data(self):
+        return self.data
+
+    def set_data(self, data):
+        if not isinstance(data, np.ndarray):
+            data = np.array(data)
+        self.data = data
