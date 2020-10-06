@@ -1,4 +1,5 @@
-from utils import save_pickle
+from utils import *
+import os
 
 
 class Labeler:
@@ -6,6 +7,9 @@ class Labeler:
     def __init__(self, save_path=None):
         self.save_path = save_path
         self.labels = set()
+
+        if os.path.exists(save_path):
+            self.load(self.save_path)
 
     def label(self, text, text_idx, choices, choices_idx):
         """
@@ -49,3 +53,13 @@ class Labeler:
             path = self.save_path
 
         save_pickle(list(self.labels), path=path)
+
+    def load(self, path=None):
+        if path is None:
+
+            if self.save_path is None:
+                return Exception("No path given to load labels from")
+
+            path = self.save_path
+
+        self.labels = set(load_pickle(path=path))
