@@ -1,6 +1,6 @@
 import os
 
-from utils import load_pickle
+from utils import load_pickle, save_pickle
 
 
 root_folder = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03"
@@ -60,15 +60,6 @@ while dupes_set:
 
     dupe_groups.append(seen)
 
-print(dupe_groups)
-
-
-
-
-
-
-
-
-
-
-
+# save
+save_path = os.path.join(root_folder, "dupes.pkl")
+save_pickle(dupe_groups, save_path)
