@@ -22,6 +22,7 @@ class Labeler:
         """
         # print original post
         print("==========================================================================")
+        print("Current index: " + str(text_idx))
         print("")
         print(repr(text))
         print("")
