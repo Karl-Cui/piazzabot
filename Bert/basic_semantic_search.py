@@ -6,8 +6,11 @@ from data_loader import DataLoader
 
 class BertSemanticSearch:
 
-    def __init__(self, corpus=None, corpus_embeddings=None):
-        self.embedder = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens')
+    def __init__(self, corpus=None, corpus_embeddings=None, default_bert=True):
+        if default_bert:
+            self.embedder = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens')
+        else:
+            self.embedder = SentenceTransformer('distilbert-base-nli-stsb-quora-ranking')
         self.corpus = corpus
         self.corpus_embeddings = corpus_embeddings
 
