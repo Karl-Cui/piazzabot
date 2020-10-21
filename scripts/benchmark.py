@@ -59,9 +59,10 @@ if __name__ == "__main__":
             for pidx in pred_idx:
                 if pidx in dupes_map[idx]:
                     num_correct += 1
-                    continue
+                    break
 
     """
-    0.7816 for cosine similarity, n = 3
+    0.5575 for cosine similarity, n = 3
+    0.8160 for BERT, n=3
     """
     print("Duplicate accuracy: " + str(num_correct / num_total))
