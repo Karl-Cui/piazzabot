@@ -22,9 +22,13 @@ class PiazzaBot(object):
                 db_dict = self.create_db_dict(post, result)
                 if result is None and db_dict is not None:
                     self.DB_manger.insert(db_dict)
-                    self.create_piazza_bot_follow_up(cid, "Piazza Bot is trying to process this post")
+                    if not db_dict["is_marked"]:
+                        self.create_piazza_bot_follow_up(cid, "Piazza Bot is trying to process this post")
                     self.get_piazza_suggestions(db_dict)
                 elif db_dict is not None:
+                    if not db_dict["is_processed"]:
+                        link = '<p><a href="http://127.0.0.1:5000/api/post/{}" target="_blank" rel="noopener">Make Post Public</a></p>'.format(cid)
+                        self.update_follow_up(db_dict["mark_id"], link)
                     self.DB_manger.insert_update(query, db_dict)
 
             except KeyError:
@@ -41,10 +45,7 @@ class PiazzaBot(object):
             post_folders = post['folders']
             post_subject = cur_post_content['subject']
             post_content = cur_post_content['content']
-            if old_post is None:
-                is_marked_by_pb, mark_id = self.is_marked_by_piazza_bot(post["children"])
-            else:
-                is_marked_by_pb, mark_id = old_post["is_marked"], old_post["mark_id"]
+            is_marked_by_pb, is_processed, mark_id = self.is_marked_by_piazza_bot(post["children"], old_post)
             new_value = {"cid": cid,
                          "revision": revision,
                          "uid": uid,
@@ -53,23 +54,30 @@ class PiazzaBot(object):
                          "subject": post_subject,
                          "content": post_content,
                          "is_marked": is_marked_by_pb,
-                         "mark_id": mark_id}
+                         "mark_id": mark_id,
+                         "is_processed": is_processed}
             return new_value
 
         except KeyError as e:
             print(e)
             return None
 
-    def is_marked_by_piazza_bot(self, children):
+    def is_marked_by_piazza_bot(self, children, old_post):
         len_children = len(children)
         if len_children == 0:
-            return False, "None"
+            return False, False, "None"
 
         for follow_up in children:
             subject = follow_up['subject']
-            if subject == "Piazza Bot is trying to process this post" or subject == "Piazza Bot Has Processed this post":
-                return True, follow_up['id']
+            if subject == "Piazza Bot is trying to process this post":
+                return True, False, follow_up['id']
+            elif subject == "Piazza Bot Has Processed this post":
+                return True, True, follow_up['id']
 
+        if old_post is not None and old_post["is_marked"]:
+            return True, True, old_post["mark_id"]
+
+        return False, False, "None"
 
     def get_piazza_suggestions(self, db_dict):
         #TODO add getting suggestions code
@@ -119,8 +127,15 @@ class PiazzaBot(object):
             params["config"] = {"ionly": True},
         return self.network._rpc.content_create(params)
 
+    def update_follow_up(self, post, content):
+        self.network.update_post(post, content)
+
     def get_post(self, cid):
         return self.network.get_post(cid)
+
+    def get_post_from_db(self, cid):
+        query = {"cid": cid}
+        return self.DB_manger.find(query)
 
 
 def create_private_post(network, post_type, post_folders, post_subject, post_content, is_announcement=0, bypass_email=0, anonymous=False):
