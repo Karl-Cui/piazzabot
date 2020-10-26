@@ -26,9 +26,12 @@ class PiazzaBot(object):
                         self.create_piazza_bot_follow_up(cid, "Piazza Bot is trying to process this post")
                     self.get_piazza_suggestions(db_dict)
                 elif db_dict is not None:
-                    if not db_dict["is_processed"]:
+                    if not db_dict["is_processed"] and db_dict["is_marked"]:
                         link = '<p><a href="http://127.0.0.1:5000/api/post/{}" target="_blank" rel="noopener">Make Post Public</a></p>'.format(cid)
                         self.update_follow_up(db_dict["mark_id"], link)
+                    elif not db_dict["is_marked"]:
+                        self.create_piazza_bot_follow_up(cid, "Piazza Bot is trying to process this post")
+                        self.get_piazza_suggestions(db_dict)
                     self.DB_manger.insert_update(query, db_dict)
 
             except KeyError:
