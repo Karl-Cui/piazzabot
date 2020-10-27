@@ -1,12 +1,59 @@
+from Bert.basic_semantic_search import BertSemanticSearch
 from data_loader import DataLoader
 from model.cosine_similarity import CosineSimilarity
 from utils import *
 
 
-if __name__ == "__main__":
+def benchmark_bert():
+    posts_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
+    path_corpus = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus.pkl"
+    path_corpus_embeddings = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus_embeddings.pkl"
+    dupe_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\dupes.pkl"
+
+    data_loader = DataLoader()
+    data_loader.load(posts_path)
+
+    qs, followup_qs = data_loader.questions_in_folder("", include_index=True)
+    as1, followup_as1 = data_loader.questions_in_folder("assignment2", include_index=True)
+
+    bert_s_s = BertSemanticSearch().from_files(path_corpus, path_corpus_embeddings)
+
+    # set up dupe mapping
+    dupes = load_pickle(dupe_path)
+    dupes_map = {}
+
+    for dupe in dupes:
+        for i in dupe:
+            dupes_map[i] = set()
+
+            for j in dupe:
+                if j != i:
+                    dupes_map[i].add(j)
+
+    # evaluate
+    num_correct = 0
+    num_total = 0
+
+    for i in range(len(as1)):
+        idx, text = as1[i]
+        pred_idx = bert_s_s.single_semantic_search(text, 4)
+        pred_idx = [qs[int(pred_idx)][0] for pred_idx in pred_idx[1:]]
+
+        # see if one of the indices in the top n is a dupe provided that the current question has a dupe
+        if dupes_map.get(idx) is not None:
+            num_total += 1
+
+            for pidx in pred_idx:
+                if pidx in dupes_map[idx]:
+                    num_correct += 1
+                    break
+
+    return num_correct / num_total
+
+
+def benchmark_cosine_sim():
     posts_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
     preproc_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\data.pkl"
-    label_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\labeled.pkl"
     dupe_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\dupes.pkl"
 
     data_loader = DataLoader()
@@ -61,8 +108,14 @@ if __name__ == "__main__":
                     num_correct += 1
                     break
 
+    return num_correct / num_total
+
+
+if __name__ == "__main__":
+    acc = benchmark_cosine_sim()
+
     """
     0.5575 for cosine similarity, n = 3
     0.8160 for BERT, n=3
     """
-    print("Duplicate accuracy: " + str(num_correct / num_total))
+    print("Duplicate accuracy: " + str(acc))
