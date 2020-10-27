@@ -57,3 +57,7 @@ class CosineSimilarity:
         if not isinstance(data, np.ndarray):
             data = np.array(data)
         self.data = data
+
+    def set_vect(self, vect):
+        """Replace TFIDF vectorizer with soemthing else (like the universal sentence encoder)"""
+        self.vect = vect
