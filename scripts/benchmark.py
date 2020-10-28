@@ -160,8 +160,63 @@ def benchmark_use():
     return num_correct / num_total
 
 
-def fliter_window_cos_sim():
-    pass
+def filter_window_cos_sim():
+    """
+    n = 3
+    ---------------------------------------
+    Timestamp-agnostic:     0.5575
+    Before current time:    0.2643 / 0.4080 (left is < timestamp, right is <= timestamp. Why the large disparity?)
+    3 weeks before:                  0.4080
+    2 weeks before:         0.2356 / 0.3966
+    1 week before:                   0.3563
+    """
+    data_loader = DataLoader()
+    data_loader.load(posts_path)
+
+    qs, followup_qs = data_loader.questions_in_folder("assignment2", include_index=True, include_timestamp=True)
+
+    # # preprocess while still preserving index
+    # preproc = Preprocess()
+    # posts = [(idx, preproc.preprocess(text)) for (idx, text) in qs]
+
+    # load / save preprocessed data
+    # save_pickle(posts, preproc_path)
+    data = load_pickle(preproc_path)
+    data = [d[1] for d in data]  # d[0] is the index of the post, d[1] is the actual text, d[2] is timestamp
+
+    # train basic similarity model
+    cos_sim = CosineSimilarity()
+    cos_sim.fit(data)
+    cos_sim.set_data(qs)
+
+    # set up dupe mapping
+    dupes = load_pickle(dupe_path)
+    dupes_map = create_duplicate_map(dupes)
+
+    # evaluate
+    num_correct = 0
+    num_total = 0
+
+    for i in range(len(qs)):
+        idx, _, timestamp = qs[i]
+        timestamp = timestamp.value // 10 ** 9  # convert to seconds
+        pred_idx = cos_sim.find_similar(data[i])
+
+        # filter by timestamp: 2 weeks
+        pred_idx = [int(sim_idx) for sim_idx, txt, ts in pred_idx if ts.value // 10 ** 9 < timestamp and
+                    ts.value // 10 ** 9 + 14 * 24 * 3600 > timestamp]   # 14 days = 2 weeks
+        pred_idx = pred_idx[1:4]
+
+        # see if one of the indices in the top n is a dupe provided that the current question has a dupe
+        if dupes_map.get(idx) is not None:
+            num_total += 1
+
+            for pidx in pred_idx:
+                if pidx in dupes_map[idx]:
+                    num_correct += 1
+                    break
+
+    return num_correct / num_total
 
 
 if __name__ == "__main__":
@@ -185,5 +240,5 @@ if __name__ == "__main__":
     0.8735 for BERT
     0.5402 for USE
     """
-    acc = benchmark_bert()
+    acc = filter_window_cos_sim()
     print("Duplicate accuracy: " + str(acc))
