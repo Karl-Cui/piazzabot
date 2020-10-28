@@ -55,7 +55,7 @@ def benchmark_bert():
 
     for i in range(len(as1)):
         idx, text = as1[i]
-        pred_idx = bert_s_s.single_semantic_search(text, 6)
+        pred_idx = bert_s_s.single_semantic_search(text, 4)
         pred_idx = [qs[int(pred_idx)][0] for pred_idx in pred_idx[1:]]
 
         # see if one of the indices in the top n is a dupe provided that the current question has a dupe
