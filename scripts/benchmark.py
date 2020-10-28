@@ -55,7 +55,7 @@ def benchmark_bert():
 
     for i in range(len(as1)):
         idx, text = as1[i]
-        pred_idx = bert_s_s.single_semantic_search(text, 4)
+        pred_idx = bert_s_s.single_semantic_search(text, 6)
         pred_idx = [qs[int(pred_idx)][0] for pred_idx in pred_idx[1:]]
 
         # see if one of the indices in the top n is a dupe provided that the current question has a dupe
@@ -160,14 +160,30 @@ def benchmark_use():
     return num_correct / num_total
 
 
-if __name__ == "__main__":
-    acc = benchmark_use()
+def fliter_window_cos_sim():
+    pass
 
+
+if __name__ == "__main__":
     """
+    n = 1
+    ---------------------------------------
+    0.3621 for cosine similarity
+    0.6092 for BERT
+    0.3276 for USE
+    
     n = 3
     ---------------------------------------
     0.5575 for cosine similarity
-    0.8160 for BERT
+    0.8161 for BERT
+    0.8161 for Quora BERT (check that this is actually Quora BERT?)
     0.4943 for USE
+    
+    n = 5
+    ---------------------------------------
+    0.6264 for cosine similarity
+    0.8735 for BERT
+    0.5402 for USE
     """
+    acc = benchmark_bert()
     print("Duplicate accuracy: " + str(acc))
