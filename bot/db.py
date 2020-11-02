@@ -18,3 +18,6 @@ class MongoDBManger(object):
 
     def find(self, query):
         return self.collection.find_one(query)
+
+    def get_all(self):
+        return self.collection.find()

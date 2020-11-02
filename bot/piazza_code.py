@@ -2,15 +2,18 @@ from piazza_api import Piazza
 from piazza_api.rpc import PiazzaRPC
 import numpy as np
 from bot.db import MongoDBManger
+from Bert.basic_semantic_search import BertSemanticSearch
 
 class PiazzaBot(object):
 
-    def __init__(self, user, password, class_id):
+    def __init__(self, user, password, class_id, corpus=None, corpus_embeddings=None, default_bert=True):
         self.p = Piazza()
         self.p.user_login(user, password)
         self.user_profile = self.p.get_user_profile()
         self.network = self.p.network(class_id)
         self.DB_manger = MongoDBManger()
+        self.bert = BertSemanticSearch(corpus, corpus_embeddings, default_bert)
+        self.parallel_cid_list = []
 
     def heart_beat(self):
         posts = self.network.iter_all_posts()
@@ -24,18 +27,35 @@ class PiazzaBot(object):
                     self.DB_manger.insert(db_dict)
                     if not db_dict["is_marked"]:
                         self.create_piazza_bot_follow_up(cid, "Piazza Bot is trying to process this post")
-                    self.get_piazza_suggestions(db_dict)
+                        self.make_private(db_dict)
                 elif db_dict is not None:
-                    if not db_dict["is_processed"] and db_dict["is_marked"]:
-                        link = '<p><a href="http://127.0.0.1:5000/api/post/{}" target="_blank" rel="noopener">Make Post Public</a></p>'.format(cid)
-                        self.update_follow_up(db_dict["mark_id"], link)
+                    if not db_dict["is_processed"] and db_dict["is_marked"] and len(self.parallel_cid_list) != 0:
+                        self.make_piazza_suggestions(db_dict, cid)
                     elif not db_dict["is_marked"]:
+                        print("here")
                         self.create_piazza_bot_follow_up(cid, "Piazza Bot is trying to process this post")
-                        self.get_piazza_suggestions(db_dict)
+                        self.make_private(db_dict)
+
                     self.DB_manger.insert_update(query, db_dict)
 
             except KeyError:
                 print("no cid")
+
+    def generate_embeddings(self):
+        docs = self.DB_manger.get_all()
+        if docs is None:
+            return 1
+
+        corpus = []
+        parallel_cid_list_local = []
+        for doc in docs:
+            corpus.append(doc["content"])
+            parallel_cid_list_local.append(doc["cid"])
+
+        self.bert.set_corpus(corpus)
+        self.bert.preprocess_corpus()
+        self.parallel_cid_list = parallel_cid_list_local
+
 
     def create_db_dict(self, post, old_post):
         try:
@@ -68,6 +88,7 @@ class PiazzaBot(object):
     def is_marked_by_piazza_bot(self, children, old_post):
         len_children = len(children)
         if len_children == 0:
+            print("getting childern len 0")
             return False, False, "None"
 
         for follow_up in children:
@@ -82,11 +103,34 @@ class PiazzaBot(object):
 
         return False, False, "None"
 
-    def get_piazza_suggestions(self, db_dict):
-        #TODO add getting suggestions code
+    def make_private(self, db_dict):
         try:
             if "gd6v7134AUa" != db_dict["uid"]:
                 self.update_post(db_dict["cid"], db_dict["type"], db_dict["revision"], db_dict["folders"], db_dict["subject"], db_dict["content"], False)
+
+            return 1
+        except KeyError:
+            return 0
+
+    def make_suggestion_string(self, cur_cid, post_cid):
+        link = '<p><a href="https://piazza.com/class/kg9odngyfny6s9?cid={}" target="_blank" rel="noopener">Potential Duplicate of @{}</a></p>'.format(cur_cid, cur_cid)
+        mark_dup = '<p><a href="http://127.0.0.1:5000/api/dup/{}/{}" target="_blank" rel="noopener">Mark Current Post as Duplicate of @{}</a>'.format(post_cid, cur_cid, cur_cid)
+        mark_followup = 'or <a href="http://127.0.0.1:5000/api/followup/{}/{}" target="_blank" rel="noopener">Mark Current Post as Follow up of @{}</a></p>'.format(post_cid, cur_cid, cur_cid)
+        return link + mark_dup + mark_followup
+
+    def make_piazza_suggestions(self, db_dict, cid):
+        #TODO add getting suggestions code
+        msg = '<p><a href="http://127.0.0.1:5000/api/post/{}" target="_blank" rel="noopener">Make Post Public</a></p>'.format(cid)
+
+        try:
+            if "gd6v7134AUa" != db_dict["uid"]:
+                topk_idxs = self.bert.single_semantic_search(db_dict["content"], top_k=2)
+                topk_cids = [self.parallel_cid_list[idx] for idx in topk_idxs]
+
+                for dup_cid in topk_cids:
+                    msg += self.make_suggestion_string(dup_cid, cid)
+
+                self.update_follow_up(db_dict["mark_id"], msg)
 
             return 1
         except KeyError:
@@ -140,6 +184,9 @@ class PiazzaBot(object):
         query = {"cid": cid}
         return self.DB_manger.find(query)
 
+    def mark_as_duplicate(self, duplicated_cid, master_cid, msg='Piazza bot found this Duplicate'):
+        self.network.mark_as_duplicate(duplicated_cid, master_cid, msg)
+
 
 def create_private_post(network, post_type, post_folders, post_subject, post_content, is_announcement=0, bypass_email=0, anonymous=False):
     """Create a post
@@ -182,12 +229,15 @@ def create_private_post(network, post_type, post_folders, post_subject, post_con
     return network._rpc.content_create(params)
 
 if __name__ == "__main__":
+    corpus = r"C:\Users\sohai\Documents\Uni 2020\csc392\piazzabot\data\corpus.plk"
     login = np.loadtxt(r"C:\Users\sohai\Documents\Uni 2020\csc392\login.txt", dtype=str)
 
     bot = PiazzaBot(login[0], login[1], "kg9odngyfny6s9")
     bot.heart_beat()
+    bot.generate_embeddings()
+    bot.heart_beat()
 
-    print(bot.get_post(9))
+    print(bot.get_post(14))
 
 
 
