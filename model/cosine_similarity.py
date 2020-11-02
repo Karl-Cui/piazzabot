@@ -28,14 +28,16 @@ class CosineSimilarity:
         self.data = data
         self.vect_data = self.vect.fit_transform(data)
 
-    def find_similar(self, text, top_n):
+    def find_similar(self, text, top_n=None):
         """
         Find top n texts (from set of fitted texts) that are most similar to the one given
 
         :param text: str that we want to find most similar to
-        :param top_n: number of most similar matches to find
+        :param top_n: number of most similar matches to find. If not given, return everything in order of similarity.
         :return: list of similar texts
         """
+        if top_n is None:
+            top_n = self.data.size - 1
         top_n = min(top_n + 1, self.data.size)  # make sure smaller than dataset size
 
         text = self.pre.preprocess(text)

@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 import tensorflow_hub as hub
 
 
@@ -11,13 +10,12 @@ class USE:
 
     def transform(self, data):
         """
-        Given text data, embed with universal sentence encoder, normalize, and convert from tensor to numpy array
+        Given text data, embed with universal sentence encoder, and convert from tensor to numpy array
 
         :param data: list of string of length n
         :return: (n, 512) ndarray of embedded data
         """
         data = self.model(data)
-        data = tf.nn.l2_normalize(data, axis=1)
         data = np.array(data)
 
         return data
