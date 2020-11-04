@@ -160,15 +160,15 @@ def benchmark_use():
     return num_correct / num_total
 
 
-def filter_window_cos_sim():
+def filter_window_cos_sim(top_n=3):
     """
     n = 3
     ---------------------------------------
     Timestamp-agnostic:     0.5575
-    Before current time:    0.2643 / 0.4080 (left is < timestamp, right is <= timestamp. Why the large disparity?)
-    3 weeks before:         0.2644 / 0.4080
-    2 weeks before:         0.2356 / 0.3966
-    1 week before:                   0.3563
+    Before current time:    0.4080
+    3 weeks before:         0.4080
+    2 weeks before:         0.3966
+    1 week before:          0.3563
     """
     data_loader = DataLoader()
     data_loader.load(posts_path)
@@ -205,7 +205,7 @@ def filter_window_cos_sim():
         # filter by timestamp: 2 weeks
         pred_idx = [int(sim_idx) for sim_idx, txt, ts in pred_idx if
                     ts.value // 10 ** 9 < timestamp < ts.value // 10 ** 9 + 14 * 24 * 3600]   # 14 days = 2 weeks
-        pred_idx = pred_idx[1:4]
+        pred_idx = pred_idx[:top_n]
 
         # see if one of the indices in the top n is a dupe provided that the current question has a dupe
         if dupes_map.get(idx) is not None:
@@ -219,13 +219,13 @@ def filter_window_cos_sim():
     return num_correct / num_total
 
 
-def filter_window_bert():
+def filter_window_bert(top_n=3):
     """
     n = 3
     ---------------------------------------
     Timestamp-agnostic:     0.8161
-    Before current time:    0.3793 / 0.5575
-    2 weeks before:         0.2874 / 0.4885
+    Before current time:    0.5690
+    2 weeks before:         0.5000
     """
     data_loader = DataLoader()
     data_loader.load(posts_path)
@@ -250,8 +250,8 @@ def filter_window_bert():
 
         pred_idx = bert_s_s.single_semantic_search(text, 100)
         pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
-                    qs[int(pidx)][2].value // 10 ** 9 <= timestamp < qs[int(pidx)][2].value // 10 ** 9 + 14 * 24 * 3600]  # 14 days = 2 weeks
-        pred_idx = pred_idx[1: 4]
+                    qs[int(pidx)][2].value // 10 ** 9 < timestamp < qs[int(pidx)][2].value // 10 ** 9 + 14 * 24 * 3600]  # 14 days = 2 weeks
+        pred_idx = pred_idx[:top_n]   # filter by top k entries
 
         # see if one of the indices in the top n is a dupe provided that the current question has a dupe
         if dupes_map.get(idx) is not None:
@@ -286,5 +286,5 @@ if __name__ == "__main__":
     0.8735 for BERT
     0.5402 for USE
     """
-    acc = filter_window_bert()
+    acc = filter_window_cos_sim()
     print("Duplicate accuracy: " + str(acc))
