@@ -160,7 +160,7 @@ def benchmark_use():
     return num_correct / num_total
 
 
-def filter_window_cos_sim(top_n=3):
+def filter_window_cos_sim(top_n=3, time_window=None):
     """
     n = 3
     ---------------------------------------
@@ -169,6 +169,10 @@ def filter_window_cos_sim(top_n=3):
     3 weeks before:         0.4080
     2 weeks before:         0.3966
     1 week before:          0.3563
+
+    :param top_n: see if correct prediction is in top n predictions
+    :param time_window: number of days before post to check for duplicates
+    :return: None, prints duplicate detection accuracy
     """
     data_loader = DataLoader()
     data_loader.load(posts_path)
@@ -202,9 +206,17 @@ def filter_window_cos_sim(top_n=3):
         timestamp = timestamp.value // 10 ** 9  # convert to seconds
         pred_idx = cos_sim.find_similar(data[i])
 
-        # filter by timestamp: 2 weeks
-        pred_idx = [int(sim_idx) for sim_idx, txt, ts in pred_idx if
-                    ts.value // 10 ** 9 < timestamp < ts.value // 10 ** 9 + 14 * 24 * 3600]   # 14 days = 2 weeks
+        # no time window given: check all posts that came before
+        if time_window is None:
+            pred_idx = [int(sim_idx) for sim_idx, txt, ts in pred_idx if
+                        ts.value // 10 ** 9 < timestamp]
+
+        # time window given: check posts within specified number of days of asked question
+        else:
+            pred_idx = [int(sim_idx) for sim_idx, txt, ts in pred_idx if
+                        ts.value // 10 ** 9 < timestamp <
+                        ts.value // 10 ** 9 + time_window * 24 * 3600]
+
         pred_idx = pred_idx[:top_n]
 
         # see if one of the indices in the top n is a dupe provided that the current question has a dupe
@@ -219,13 +231,17 @@ def filter_window_cos_sim(top_n=3):
     return num_correct / num_total
 
 
-def filter_window_bert(top_n=3):
+def filter_window_bert(top_n=3, time_window=None):
     """
     n = 3
     ---------------------------------------
     Timestamp-agnostic:     0.8161
     Before current time:    0.5690
     2 weeks before:         0.5000
+
+    :param top_n: see if correct prediction is in top n predictions
+    :param time_window: number of days before post to check for duplicates
+    :return: None, prints duplicate detection accuracy
     """
     data_loader = DataLoader()
     data_loader.load(posts_path)
@@ -249,8 +265,18 @@ def filter_window_bert(top_n=3):
         timestamp = timestamp.value // 10 ** 9  # convert to seconds
 
         pred_idx = bert_s_s.single_semantic_search(text, 100)
-        pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
-                    qs[int(pidx)][2].value // 10 ** 9 < timestamp < qs[int(pidx)][2].value // 10 ** 9 + 14 * 24 * 3600]  # 14 days = 2 weeks
+
+        # no time window given: check all posts that came before
+        if time_window is None:
+            pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
+                        qs[int(pidx)][2].value // 10 ** 9 < timestamp]
+
+        # time window given: check posts within specified number of days of asked question
+        else:
+            pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
+                        qs[int(pidx)][2].value // 10 ** 9 < timestamp <
+                        qs[int(pidx)][2].value // 10 ** 9 + time_window * 24 * 3600]
+
         pred_idx = pred_idx[:top_n]   # filter by top k entries
 
         # see if one of the indices in the top n is a dupe provided that the current question has a dupe
