@@ -4,6 +4,8 @@ from model.cosine_similarity import CosineSimilarity
 from model.universal_sentence_encoder import USE
 from utils import *
 
+from matplotlib import pyplot as plt
+
 
 # paths to preprocessed data, duplicate labels, and embeddings
 posts_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
@@ -172,7 +174,7 @@ def filter_window_cos_sim(top_n=3, time_window=None):
 
     :param top_n: see if correct prediction is in top n predictions
     :param time_window: number of days before post to check for duplicates
-    :return: None, prints duplicate detection accuracy
+    :return: duplicate detection accuracy
     """
     data_loader = DataLoader()
     data_loader.load(posts_path)
@@ -241,7 +243,7 @@ def filter_window_bert(top_n=3, time_window=None):
 
     :param top_n: see if correct prediction is in top n predictions
     :param time_window: number of days before post to check for duplicates
-    :return: None, prints duplicate detection accuracy
+    :return: duplicate detection accuracy
     """
     data_loader = DataLoader()
     data_loader.load(posts_path)
@@ -312,5 +314,5 @@ if __name__ == "__main__":
     0.8735 for BERT
     0.5402 for USE
     """
-    acc = filter_window_cos_sim()
+    acc = filter_window_bert()
     print("Duplicate accuracy: " + str(acc))
