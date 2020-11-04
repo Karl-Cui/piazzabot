@@ -262,35 +262,44 @@ def filter_window_bert(top_n=3, time_window=None):
     num_correct = 0
     num_total = 0
 
-    for i in range(len(as1)):
-        idx, text, timestamp = as1[i]
-        timestamp = timestamp.value // 10 ** 9  # convert to seconds
+    y = []
+    for top_n in range(1, 11):
+        for i in range(len(as1)):
+            idx, text, timestamp = as1[i]
+            timestamp = timestamp.value // 10 ** 9  # convert to seconds
 
-        pred_idx = bert_s_s.single_semantic_search(text, 100)
+            pred_idx = bert_s_s.single_semantic_search(text, 100)
 
-        # no time window given: check all posts that came before
-        if time_window is None:
-            pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
-                        qs[int(pidx)][2].value // 10 ** 9 < timestamp]
+            # no time window given: check all posts that came before
+            if time_window is None:
+                pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
+                            qs[int(pidx)][2].value // 10 ** 9 < timestamp]
 
-        # time window given: check posts within specified number of days of asked question
-        else:
-            pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
-                        qs[int(pidx)][2].value // 10 ** 9 < timestamp <
-                        qs[int(pidx)][2].value // 10 ** 9 + time_window * 24 * 3600]
+            # time window given: check posts within specified number of days of asked question
+            else:
+                pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
+                            qs[int(pidx)][2].value // 10 ** 9 < timestamp <
+                            qs[int(pidx)][2].value // 10 ** 9 + time_window * 24 * 3600]
 
-        pred_idx = pred_idx[:top_n]   # filter by top k entries
+            pred_idx = pred_idx[:top_n]   # filter by top k entries
 
-        # see if one of the indices in the top n is a dupe provided that the current question has a dupe
-        if dupes_map.get(idx) is not None:
-            num_total += 1
+            # see if one of the indices in the top n is a dupe provided that the current question has a dupe
+            if dupes_map.get(idx) is not None:
+                num_total += 1
 
-            for pidx in pred_idx:
-                if pidx in dupes_map[idx]:
-                    num_correct += 1
-                    break
+                for pidx in pred_idx:
+                    if pidx in dupes_map[idx]:
+                        num_correct += 1
+                        break
 
-    return num_correct / num_total
+        print(top_n, num_correct / num_total)
+        y.append(num_correct / num_total)
+
+    plt.scatter([i for i in range(1, 11)], y)
+    plt.xlabel("Duplicate in Top n predictions")
+    plt.ylabel("Accuracy")
+    plt.title("Duplicate Detection Rate")
+    plt.show()
 
 
 if __name__ == "__main__":
