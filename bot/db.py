@@ -21,3 +21,7 @@ class MongoDBManger(object):
 
     def get_all(self):
         return self.collection.find()
+
+    def del_by_cid(self, cid):
+        return self.collection.delete_one({"cid": cid})
+

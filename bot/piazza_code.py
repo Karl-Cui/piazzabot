@@ -64,6 +64,8 @@ class PiazzaBot(object):
             revision = len(history)
             cur_post_content = history[-1]
             uid = self.find_uid(cur_post_content)
+            if "gd6v7134AUa" == uid:
+                return None
             post_type = post["type"]
             post_folders = post['folders']
             post_subject = cur_post_content['subject']
@@ -124,11 +126,12 @@ class PiazzaBot(object):
 
         try:
             if "gd6v7134AUa" != db_dict["uid"]:
-                topk_idxs = self.bert.single_semantic_search(db_dict["content"], top_k=2)
+                topk_idxs = self.bert.single_semantic_search(db_dict["content"], top_k=3)
                 topk_cids = [self.parallel_cid_list[idx] for idx in topk_idxs]
 
                 for dup_cid in topk_cids:
-                    msg += self.make_suggestion_string(dup_cid, cid)
+                    if dup_cid != cid:
+                        msg += self.make_suggestion_string(dup_cid, cid)
 
                 self.update_follow_up(db_dict["mark_id"], msg)
 
@@ -187,46 +190,11 @@ class PiazzaBot(object):
     def mark_as_duplicate(self, duplicated_cid, master_cid, msg='Piazza bot found this Duplicate'):
         self.network.mark_as_duplicate(duplicated_cid, master_cid, msg)
 
+    def delete_post(self, cid):
+        self.network.delete_post(cid)
 
-def create_private_post(network, post_type, post_folders, post_subject, post_content, is_announcement=0, bypass_email=0, anonymous=False):
-    """Create a post
-
-    It seems like if the post has `<p>` tags, then it's treated as HTML,
-    but is treated as text otherwise. You'll want to provide `content`
-    accordingly.
-
-    :param network: Network
-    :type post_type: str
-    :param post_type: 'note', 'question'
-    :type post_folders: str
-    :param post_folders: Folder to put post into
-    :type post_subject: str
-    :param post_subject: Subject string
-    :type post_content: str
-    :param post_content: Content string
-    :type is_announcement: bool
-    :param is_announcement:
-    :type bypass_email: bool
-    :param bypass_email:
-    :type anonymous: bool
-    :param anonymous:
-    :rtype: dict
-    :returns: Dictionary with information about the created post.
-    """
-    params = {
-        "anonymous": "yes" if anonymous else "no",
-        "subject": post_subject,
-        "content": post_content,
-        "folders": post_folders,
-        "type": post_type,
-        "config": {
-            "bypass_email": bypass_email,
-            "is_announcement": is_announcement,
-            "feed_groups": "instr_kg9odngyfny6s9,itf8rrur21a73b"
-        }
-    }
-
-    return network._rpc.content_create(params)
+    def delete_post_db(self, cid):
+        return self.DB_manger.del_by_cid(cid)
 
 if __name__ == "__main__":
     corpus = r"C:\Users\sohai\Documents\Uni 2020\csc392\piazzabot\data\corpus.plk"
@@ -237,7 +205,7 @@ if __name__ == "__main__":
     bot.generate_embeddings()
     bot.heart_beat()
 
-    print(bot.get_post(14))
+    print(bot.get_post(1))
 
 
 
