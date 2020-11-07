@@ -4,6 +4,8 @@ from model.cosine_similarity import CosineSimilarity
 from model.universal_sentence_encoder import USE
 from utils import *
 
+from matplotlib import pyplot as plt
+
 
 # paths to preprocessed data, duplicate labels, and embeddings
 posts_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
@@ -160,15 +162,19 @@ def benchmark_use():
     return num_correct / num_total
 
 
-def filter_window_cos_sim():
+def filter_window_cos_sim(top_n=3, time_window=None):
     """
     n = 3
     ---------------------------------------
     Timestamp-agnostic:     0.5575
-    Before current time:    0.2643 / 0.4080 (left is < timestamp, right is <= timestamp. Why the large disparity?)
-    3 weeks before:         0.2644 / 0.4080
-    2 weeks before:         0.2356 / 0.3966
-    1 week before:                   0.3563
+    Before current time:    0.4080
+    3 weeks before:         0.4080
+    2 weeks before:         0.3966
+    1 week before:          0.3563
+
+    :param top_n: see if correct prediction is in top n predictions
+    :param time_window: number of days before post to check for duplicates
+    :return: duplicate detection accuracy
     """
     data_loader = DataLoader()
     data_loader.load(posts_path)
@@ -202,10 +208,18 @@ def filter_window_cos_sim():
         timestamp = timestamp.value // 10 ** 9  # convert to seconds
         pred_idx = cos_sim.find_similar(data[i])
 
-        # filter by timestamp: 2 weeks
-        pred_idx = [int(sim_idx) for sim_idx, txt, ts in pred_idx if
-                    ts.value // 10 ** 9 < timestamp < ts.value // 10 ** 9 + 14 * 24 * 3600]   # 14 days = 2 weeks
-        pred_idx = pred_idx[1:4]
+        # no time window given: check all posts that came before
+        if time_window is None:
+            pred_idx = [int(sim_idx) for sim_idx, txt, ts in pred_idx if
+                        ts.value // 10 ** 9 < timestamp]
+
+        # time window given: check posts within specified number of days of asked question
+        else:
+            pred_idx = [int(sim_idx) for sim_idx, txt, ts in pred_idx if
+                        ts.value // 10 ** 9 < timestamp <
+                        ts.value // 10 ** 9 + time_window * 24 * 3600]
+
+        pred_idx = pred_idx[:top_n]
 
         # see if one of the indices in the top n is a dupe provided that the current question has a dupe
         if dupes_map.get(idx) is not None:
@@ -219,13 +233,17 @@ def filter_window_cos_sim():
     return num_correct / num_total
 
 
-def filter_window_bert():
+def filter_window_bert(top_n=3, time_window=None):
     """
     n = 3
     ---------------------------------------
     Timestamp-agnostic:     0.8161
-    Before current time:    0.3793 / 0.5575
-    2 weeks before:         0.2874 / 0.4885
+    Before current time:    0.5690
+    2 weeks before:         0.5000
+
+    :param top_n: see if correct prediction is in top n predictions
+    :param time_window: number of days before post to check for duplicates
+    :return: duplicate detection accuracy
     """
     data_loader = DataLoader()
     data_loader.load(posts_path)
@@ -244,25 +262,44 @@ def filter_window_bert():
     num_correct = 0
     num_total = 0
 
-    for i in range(len(as1)):
-        idx, text, timestamp = as1[i]
-        timestamp = timestamp.value // 10 ** 9  # convert to seconds
+    y = []
+    for top_n in range(1, 11):
+        for i in range(len(as1)):
+            idx, text, timestamp = as1[i]
+            timestamp = timestamp.value // 10 ** 9  # convert to seconds
 
-        pred_idx = bert_s_s.single_semantic_search(text, 100)
-        pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
-                    qs[int(pidx)][2].value // 10 ** 9 <= timestamp < qs[int(pidx)][2].value // 10 ** 9 + 14 * 24 * 3600]  # 14 days = 2 weeks
-        pred_idx = pred_idx[1: 4]
+            pred_idx = bert_s_s.single_semantic_search(text, 100)
 
-        # see if one of the indices in the top n is a dupe provided that the current question has a dupe
-        if dupes_map.get(idx) is not None:
-            num_total += 1
+            # no time window given: check all posts that came before
+            if time_window is None:
+                pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
+                            qs[int(pidx)][2].value // 10 ** 9 < timestamp]
 
-            for pidx in pred_idx:
-                if pidx in dupes_map[idx]:
-                    num_correct += 1
-                    break
+            # time window given: check posts within specified number of days of asked question
+            else:
+                pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
+                            qs[int(pidx)][2].value // 10 ** 9 < timestamp <
+                            qs[int(pidx)][2].value // 10 ** 9 + time_window * 24 * 3600]
 
-    return num_correct / num_total
+            pred_idx = pred_idx[:top_n]   # filter by top k entries
+
+            # see if one of the indices in the top n is a dupe provided that the current question has a dupe
+            if dupes_map.get(idx) is not None:
+                num_total += 1
+
+                for pidx in pred_idx:
+                    if pidx in dupes_map[idx]:
+                        num_correct += 1
+                        break
+
+        print(top_n, num_correct / num_total)
+        y.append(num_correct / num_total)
+
+    plt.scatter([i for i in range(1, 11)], y)
+    plt.xlabel("Duplicate in Top n predictions")
+    plt.ylabel("Accuracy")
+    plt.title("Duplicate Detection Rate")
+    plt.show()
 
 
 if __name__ == "__main__":
