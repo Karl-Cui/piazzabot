@@ -78,6 +78,11 @@ class DataLoader:
 
         questions = list(questions.values())
         followup_questions = list(followup_questions.values())
+
+        if questions and len(questions[0]) == 1:
+            questions = [q[0] for q in questions]
+            followup_questions = [q[0] for q in questions]
+
         return questions, followup_questions
 
     @staticmethod
