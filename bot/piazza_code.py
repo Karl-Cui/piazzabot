@@ -3,6 +3,7 @@ from piazza_api.rpc import PiazzaRPC
 import numpy as np
 from bot.db import MongoDBManger
 from Bert.basic_semantic_search import BertSemanticSearch
+import sched, time
 
 class PiazzaBot(object):
 
@@ -16,6 +17,12 @@ class PiazzaBot(object):
         self.parallel_cid_list = []
 
     def heart_beat(self):
+        """
+        tiggers the heart beat code which process all new posts and puts the data for them into the db and also
+        make new postings and suggestions for posts in our
+
+        :return: NA
+        """
         posts = self.network.iter_all_posts()
         for post in posts:
             try:
@@ -42,6 +49,11 @@ class PiazzaBot(object):
                 print("no cid")
 
     def generate_embeddings(self):
+        """
+        generate the embeddings for all the current posts in the data base
+
+        :return: NA
+        """
         docs = self.DB_manger.get_all()
         if docs is None:
             return 1
@@ -56,8 +68,14 @@ class PiazzaBot(object):
         self.bert.preprocess_corpus()
         self.parallel_cid_list = parallel_cid_list_local
 
-
     def create_db_dict(self, post, old_post):
+        """
+        generate the embeddings for all the current posts in the data base
+
+        :param post: the new post json data we want to process into a dict we can put into the db
+        :param old_post: old db value for the current post
+        :return: post dict formatted for the DB
+        """
         try:
             cid = post["id"]
             history = post["history"]
@@ -88,6 +106,13 @@ class PiazzaBot(object):
             return None
 
     def is_marked_by_piazza_bot(self, children, old_post):
+        """
+        figure out of the current post has been marked by the bot and processed. if the current post has been marked
+        then get the cid for the marking follow up
+        :param children: current children posts(follow ups) for the current post
+        :param old_post: old db value for the current post
+        :return: boolean, boolean, cid
+        """
         len_children = len(children)
         if len_children == 0:
             print("getting childern len 0")
@@ -106,6 +131,11 @@ class PiazzaBot(object):
         return False, False, "None"
 
     def make_private(self, db_dict):
+        """
+        make the post associate with the current db dict object private
+        :param db_dict: db dict object of the post we want to make private
+        :return: 1 if successful else 0
+        """
         try:
             if "gd6v7134AUa" != db_dict["uid"]:
                 self.update_post(db_dict["cid"], db_dict["type"], db_dict["revision"], db_dict["folders"], db_dict["subject"], db_dict["content"], False)
@@ -139,8 +169,13 @@ class PiazzaBot(object):
         except KeyError:
             return 0
 
-
     def find_uid(self, cur_post_content):
+        """
+        find the uid from the most latest post history(content)
+
+        :param cur_post_content: the content params fot he post we are working on
+        :return: the uid for the user who made the last edit on this post
+        """
         try:
             uid = cur_post_content["uid"]
         except KeyError:
@@ -149,6 +184,15 @@ class PiazzaBot(object):
 
     def update_post(self, cid, post_type, revision, post_folders, post_subject, post_content, visibility_all=True):
         """Update a post
+
+        :param cid: cid of the post we want to update
+        :param post_type: the type we want to change the post to "note", "question" or "poll"
+        :param revision:
+        :param post_folders:
+        :param post_subject:
+        :param post_content:
+        :param visibility_all: change post visibility from all to just the instructors and original poster
+        :return: if the post update was successful
         """
 
         params = {
@@ -164,7 +208,12 @@ class PiazzaBot(object):
         return self.network._rpc.content_update(params)
 
     def create_piazza_bot_follow_up(self, cid, content, ionly=False):
-        """Create a follow-up on a post `post`.
+        """Create a follow-up on a post.
+
+        :param cid: cid of the post we want to add this follow up too
+        :param content: content of the follow up post
+        :param ionly: make the visibility of the follow only instructors
+        :return: follow up was created
         """
 
         params = {
@@ -177,35 +226,80 @@ class PiazzaBot(object):
             params["config"] = {"ionly": True},
         return self.network._rpc.content_create(params)
 
-    def update_follow_up(self, post, content):
-        self.network.update_post(post, content)
+    def update_follow_up(self, followup_post, content):
+        """update a follow-up on a post
+
+        :param followup_post: json of the follow up post
+        :param content: content of the follow up post
+        :return: if the follow up post was successful updated
+        """
+        self.network.update_post(followup_post, content)
 
     def get_post(self, cid):
+        """ retrieve data for a certain post
+
+        :param cid: cid of the post of you want to retrieve data for
+        :return: if the post update was successful
+        """
         return self.network.get_post(cid)
 
     def get_post_from_db(self, cid):
+        """ retrieve data from the db for a certain post
+
+        :param cid: cid of the post of you want to retrieve data for
+        :return: Mongo result object
+        """
         query = {"cid": cid}
         return self.DB_manger.find(query)
 
     def mark_as_duplicate(self, duplicated_cid, master_cid, msg='Piazza bot found this Duplicate'):
+        """ make the given post as duplicate of another
+
+        :param duplicated_cid: cid of the post of you want to make as duplicate
+        :param master_cid: cid of the post of you want to put the duplicate under
+        :param msg: msg for why the post is marked as a duplicate
+        :return: if the duplicate mark request was successful
+        """
         self.network.mark_as_duplicate(duplicated_cid, master_cid, msg)
 
     def delete_post(self, cid):
+        """ delete a post from piazza
+
+        :param cid: cid of the post of you want to delete
+        :return: if the delete request was successful
+        """
         self.network.delete_post(cid)
 
     def delete_post_db(self, cid):
+        """ delete a post from the db
+
+        :param cid: cid of the post of you want to delete
+        :return: Mongo result object
+        """
         return self.DB_manger.del_by_cid(cid)
+
+
+sch = sched.scheduler(time.time, time.sleep)
+bot = None
+def run_bot_site_querey(sc):
+   print("running at 100 mins")
+   bot.heart_beat()
+   bot.generate_embeddings()
+   bot.heart_beat()
+   sch.enter(6000, 1, run_bot_site_querey, (sc,))
+
+
+
 
 if __name__ == "__main__":
     corpus = r"C:\Users\sohai\Documents\Uni 2020\csc392\piazzabot\data\corpus.plk"
     login = np.loadtxt(r"C:\Users\sohai\Documents\Uni 2020\csc392\login.txt", dtype=str)
 
     bot = PiazzaBot(login[0], login[1], "kg9odngyfny6s9")
-    bot.heart_beat()
-    bot.generate_embeddings()
-    bot.heart_beat()
 
-    print(bot.get_post(1))
+    sch.enter(6, 1, run_bot_site_querey, (sch,))
+    sch.run()
+
 
 
 
