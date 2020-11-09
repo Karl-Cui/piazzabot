@@ -43,7 +43,7 @@ class PostPublic(Resource):
             bot.update_post(result["cid"], result["type"], result["revision"], result["folders"],
                             result["subject"], result["content"], True)
 
-        return make_response(make_bot_page('Processed post with cid={}', 'The post has now been make public for everyone to see'.format(cid)), 200, headers)
+        return make_response(make_bot_page('Processed post with cid={}'.format(cid), 'The post has now been make public for everyone to see'), 200, headers)
 
 
 class MarkDuplicate(Resource):

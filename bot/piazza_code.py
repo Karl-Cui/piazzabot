@@ -20,7 +20,7 @@ class PiazzaBot(object):
 
     def heart_beat(self):
         """
-        tiggers the heart beat code which process all new posts and puts the data for them into the db and also
+        triggers the heart beat code which process all new posts and puts the data for them into the db and also
         make new postings and suggestions for posts in our
 
         :return: NA
@@ -108,8 +108,8 @@ class PiazzaBot(object):
                          "is_marked": is_marked_by_pb,
                          "mark_id": mark_id,
                          "is_processed": is_processed}
-            if old_post is not None and revision > old_post["revision"]:
-                print("updated {}".format(post_content))
+            # generate a new embedding if this is first time this post is being added to the db or if there was a content update
+            if old_post is None or revision > old_post["revision"]:
                 encoding = Binary(pickle.dumps(self.bert.encode_content(post_content)))
                 new_value["encoding"] = encoding
             return new_value
