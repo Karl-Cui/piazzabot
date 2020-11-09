@@ -1,5 +1,7 @@
 from piazza_api import Piazza
 from piazza_api.rpc import PiazzaRPC
+import pickle
+from bson.binary import Binary
 import numpy as np
 from bot.db import MongoDBManger
 from Bert.basic_semantic_search import BertSemanticSearch
@@ -44,6 +46,9 @@ class PiazzaBot(object):
                         self.make_private(db_dict)
 
                     self.DB_manger.insert_update(query, db_dict)
+                    # update the value in the db if the change_log or history has changed
+                    if db_dict["change_log_len"] > result["change_log_len"] or db_dict["revision"] > result["revision"]:
+                        self.DB_manger.insert_update(query, db_dict)
 
             except KeyError:
                 print("no cid")
@@ -79,18 +84,22 @@ class PiazzaBot(object):
         try:
             cid = post["id"]
             history = post["history"]
+            change_log_len = len(post["change_log"])
             revision = len(history)
             cur_post_content = history[-1]
             uid = self.find_uid(cur_post_content)
             if "gd6v7134AUa" == uid:
                 return None
+
             post_type = post["type"]
             post_folders = post['folders']
             post_subject = cur_post_content['subject']
             post_content = cur_post_content['content']
             is_marked_by_pb, is_processed, mark_id = self.is_marked_by_piazza_bot(post["children"], old_post)
+
             new_value = {"cid": cid,
                          "revision": revision,
+                         "change_log_len": change_log_len,
                          "uid": uid,
                          "type": post_type,
                          "folders": post_folders,
@@ -99,6 +108,10 @@ class PiazzaBot(object):
                          "is_marked": is_marked_by_pb,
                          "mark_id": mark_id,
                          "is_processed": is_processed}
+            if old_post is not None and revision > old_post["revision"]:
+                print("updated {}".format(post_content))
+                encoding = Binary(pickle.dumps(self.bert.encode_content(post_content)))
+                new_value["encoding"] = encoding
             return new_value
 
         except KeyError as e:
@@ -286,6 +299,7 @@ def run_bot_site_querey(sc):
    bot.heart_beat()
    bot.generate_embeddings()
    bot.heart_beat()
+   print("done sequence")
    sch.enter(6000, 1, run_bot_site_querey, (sc,))
 
 
@@ -297,6 +311,7 @@ if __name__ == "__main__":
 
     bot = PiazzaBot(login[0], login[1], "kg9odngyfny6s9")
 
+    print(bot.get_post(11))
     sch.enter(6, 1, run_bot_site_querey, (sch,))
     sch.run()
 
