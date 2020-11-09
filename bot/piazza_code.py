@@ -111,6 +111,7 @@ class PiazzaBot(object):
             # generate a new embedding if this is first time this post is being added to the db or if there was a content update
             if old_post is None or revision > old_post["revision"]:
                 encoding = Binary(pickle.dumps(self.bert.encode_content(post_content)))
+                print(encoding)
                 new_value["encoding"] = encoding
             return new_value
 
@@ -132,6 +133,9 @@ class PiazzaBot(object):
             return False, False, "None"
 
         for follow_up in children:
+            if follow_up['type'] == "i_answer":
+                return True, True, "None"
+
             subject = follow_up['subject']
             if subject == "Piazza Bot is trying to process this post":
                 return True, False, follow_up['id']
@@ -306,12 +310,12 @@ def run_bot_site_querey(sc):
 
 
 if __name__ == "__main__":
-    corpus = r"C:\Users\sohai\Documents\Uni 2020\csc392\piazzabot\data\corpus.plk"
-    login = np.loadtxt(r"C:\Users\sohai\Documents\Uni 2020\csc392\login.txt", dtype=str)
+    # corpus = r"C:\Users\sohai\Documents\Uni 2020\csc392\piazzabot\data\corpus.plk"
+    login = np.loadtxt(r"C:\Users\karlc\Documents\ut\_y4\CSC492\login.txt", dtype=str)
 
     bot = PiazzaBot(login[0], login[1], "kg9odngyfny6s9")
 
-    print(bot.get_post(11))
+    print(bot.get_post(23))
     sch.enter(6, 1, run_bot_site_querey, (sch,))
     sch.run()
 
