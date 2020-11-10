@@ -141,6 +141,8 @@ class PiazzaBot(object):
                 return True, False, follow_up['id']
             elif subject == "Piazza Bot Has Processed this post":
                 return True, True, follow_up['id']
+            elif len(subject) > 24 and subject[:24] == '<p><b>Piazza Bot</b></p>':
+                return True, False, follow_up['id']
 
         if old_post is not None and old_post["is_marked"]:
             return True, True, old_post["mark_id"]
@@ -169,7 +171,7 @@ class PiazzaBot(object):
 
     def make_piazza_suggestions(self, db_dict, cid):
         #TODO add getting suggestions code
-        msg = '<p><a href="http://127.0.0.1:5000/api/post/{}" target="_blank" rel="noopener">Make Post Public</a></p>'.format(cid)
+        msg = '<p><b>Piazza Bot</b></p><p><a href="http://127.0.0.1:5000/api/post/{}" target="_blank" rel="noopener">Make Post Public</a></p>'.format(cid)
 
         try:
             if "gd6v7134AUa" != db_dict["uid"]:
@@ -311,11 +313,11 @@ def run_bot_site_querey(sc):
 
 if __name__ == "__main__":
     # corpus = r"C:\Users\sohai\Documents\Uni 2020\csc392\piazzabot\data\corpus.plk"
-    login = np.loadtxt(r"C:\Users\karlc\Documents\ut\_y4\CSC492\login.txt", dtype=str)
+    login = np.loadtxt(r"C:\Users\sohai\Documents\Uni 2020\csc392\login.txt", dtype=str)
 
     bot = PiazzaBot(login[0], login[1], "kg9odngyfny6s9")
 
-    print(bot.get_post(23))
+    print(bot.get_post(17))
     sch.enter(6, 1, run_bot_site_querey, (sch,))
     sch.run()
 
