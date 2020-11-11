@@ -4,6 +4,7 @@ from model.cosine_similarity import CosineSimilarity
 from model.universal_sentence_encoder import USE
 from utils import *
 
+import numpy as np
 from matplotlib import pyplot as plt
 
 
@@ -68,6 +69,90 @@ def benchmark_bert():
                 if pidx in dupes_map[idx]:
                     num_correct += 1
                     break
+
+    return num_correct / num_total
+
+
+def bert_sim_score(top_n=3, time_window=None):
+    """
+    Concerning similarity scores:
+
+    n = 3:
+        mean:  0.6718048
+        median:  0.67678297
+        std:  0.07652894
+
+    :return:
+    """
+    data_loader = DataLoader()
+    data_loader.load(posts_path)
+
+    qs, followup_qs = data_loader.questions_in_folder("", include_index=True, include_timestamp=True)
+    as1, followup_as1 = data_loader.questions_in_folder("assignment2", include_index=True, include_timestamp=True)
+
+    # load BERT embeddings
+    bert_s_s = BertSemanticSearch().from_files(bert_corpus, bert_corpus_embeddings)
+
+    # set up dupe mapping
+    dupes = load_pickle(dupe_path)
+    dupes_map = create_duplicate_map(dupes)
+
+    # evaluate
+    num_correct = 0
+    num_total = 0
+    score_cutoff = []
+
+    for i in range(len(as1)):
+        idx, text, timestamp = as1[i]
+        timestamp = timestamp.value // 10 ** 9  # convert to seconds
+
+        pred_idx, cutoff = bert_s_s.single_semantic_search(text, 100)
+        pred_idxs = []
+        cutoffs = []
+
+        # no time window given: check all posts that came before
+        if time_window is None:
+            for j in range(len(pred_idx)):
+                pidx = pred_idx[j]
+
+                if qs[int(pidx)][2].value // 10 ** 9 < timestamp:
+                    pred_idxs.append(qs[int(pidx)][0])
+                    cutoffs.append(cutoff[j])
+
+        # time window given: check posts within specified number of days of asked question
+        else:
+            for j in range(len(pred_idx)):
+                pidx = pred_idx[j]
+
+                if qs[int(pidx)][2].value // 10 ** 9 < timestamp < qs[int(pidx)][2].value // 10 ** 9 + time_window * 24 * 3600:
+                    pred_idxs.append(qs[int(pidx)][0])
+                    cutoffs.append(cutoff[j])
+
+        score_cutoff.append(cutoffs[top_n])
+        pred_idx = pred_idxs[:top_n]   # filter by top k entries
+
+        # see if one of the indices in the top n is a dupe provided that the current question has a dupe
+        if dupes_map.get(idx) is not None:
+            num_total += 1
+
+            for pidx in pred_idx:
+                if pidx in dupes_map[idx]:
+                    num_correct += 1
+                    break
+
+    """Score cutoff analysis"""
+    score_cutoff = np.array(score_cutoff)
+
+    print("mean: ", np.mean(score_cutoff))
+    print("median: ", np.median(score_cutoff))
+    print("std: ", np.std(score_cutoff))
+
+    # plot score cutoff
+    plt.hist(score_cutoff, bins=30)
+    plt.xlabel("Similarity score")
+    plt.ylabel("Number of samples")
+    plt.title("Distribution of similarity score cutoff for n=3")
+    plt.show()
 
     return num_correct / num_total
 
@@ -262,44 +347,35 @@ def filter_window_bert(top_n=3, time_window=None):
     num_correct = 0
     num_total = 0
 
-    y = []
-    for top_n in range(1, 11):
-        for i in range(len(as1)):
-            idx, text, timestamp = as1[i]
-            timestamp = timestamp.value // 10 ** 9  # convert to seconds
+    for i in range(len(as1)):
+        idx, text, timestamp = as1[i]
+        timestamp = timestamp.value // 10 ** 9  # convert to seconds
 
-            pred_idx = bert_s_s.single_semantic_search(text, 100)
+        pred_idx = bert_s_s.single_semantic_search(text, 100)
 
-            # no time window given: check all posts that came before
-            if time_window is None:
-                pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
-                            qs[int(pidx)][2].value // 10 ** 9 < timestamp]
+        # no time window given: check all posts that came before
+        if time_window is None:
+            pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
+                        qs[int(pidx)][2].value // 10 ** 9 < timestamp]
 
-            # time window given: check posts within specified number of days of asked question
-            else:
-                pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
-                            qs[int(pidx)][2].value // 10 ** 9 < timestamp <
-                            qs[int(pidx)][2].value // 10 ** 9 + time_window * 24 * 3600]
+        # time window given: check posts within specified number of days of asked question
+        else:
+            pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
+                        qs[int(pidx)][2].value // 10 ** 9 < timestamp <
+                        qs[int(pidx)][2].value // 10 ** 9 + time_window * 24 * 3600]
 
-            pred_idx = pred_idx[:top_n]   # filter by top k entries
+        pred_idx = pred_idx[:top_n]   # filter by top k entries
 
-            # see if one of the indices in the top n is a dupe provided that the current question has a dupe
-            if dupes_map.get(idx) is not None:
-                num_total += 1
+        # see if one of the indices in the top n is a dupe provided that the current question has a dupe
+        if dupes_map.get(idx) is not None:
+            num_total += 1
 
-                for pidx in pred_idx:
-                    if pidx in dupes_map[idx]:
-                        num_correct += 1
-                        break
+            for pidx in pred_idx:
+                if pidx in dupes_map[idx]:
+                    num_correct += 1
+                    break
 
-        print(top_n, num_correct / num_total)
-        y.append(num_correct / num_total)
-
-    plt.scatter([i for i in range(1, 11)], y)
-    plt.xlabel("Duplicate in Top n predictions")
-    plt.ylabel("Accuracy")
-    plt.title("Duplicate Detection Rate")
-    plt.show()
+    return num_correct / num_total
 
 
 if __name__ == "__main__":
@@ -323,5 +399,5 @@ if __name__ == "__main__":
     0.8735 for BERT
     0.5402 for USE
     """
-    acc = filter_window_bert()
+    acc = bert_sim_score()
     print("Duplicate accuracy: " + str(acc))
