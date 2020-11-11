@@ -77,10 +77,25 @@ def bert_sim_score(top_n=3, time_window=None):
     """
     Concerning similarity scores:
 
+    n = 1:
+        mean:  0.68802536
+        median:  0.6917961
+        std:  0.076929025
+
+    n = 2:
+        mean:  0.6718048
+        median:  0.67678297
+        std:  0.07652894
+
     n = 3:
         mean:  0.6718048
         median:  0.67678297
         std:  0.07652894
+
+    n = 4:
+        mean:  0.65994626
+        median:  0.6663551
+        std:  0.07690837
 
     :return:
     """
@@ -106,7 +121,7 @@ def bert_sim_score(top_n=3, time_window=None):
         idx, text, timestamp = as1[i]
         timestamp = timestamp.value // 10 ** 9  # convert to seconds
 
-        pred_idx, cutoff = bert_s_s.single_semantic_search(text, 100)
+        pred_idx, cutoff = bert_s_s.single_semantic_search_with_similarity(text, 100)
         pred_idxs = []
         cutoffs = []
 
@@ -128,7 +143,7 @@ def bert_sim_score(top_n=3, time_window=None):
                     pred_idxs.append(qs[int(pidx)][0])
                     cutoffs.append(cutoff[j])
 
-        score_cutoff.append(cutoffs[top_n])
+        score_cutoff.append(min(cutoffs[:top_n]))
         pred_idx = pred_idxs[:top_n]   # filter by top k entries
 
         # see if one of the indices in the top n is a dupe provided that the current question has a dupe
@@ -151,7 +166,71 @@ def bert_sim_score(top_n=3, time_window=None):
     plt.hist(score_cutoff, bins=30)
     plt.xlabel("Similarity score")
     plt.ylabel("Number of samples")
-    plt.title("Distribution of similarity score cutoff for n=3")
+    plt.title("Distribution of similarity score cutoff for n={0}".format(top_n))
+    plt.show()
+
+    return num_correct / num_total
+
+
+def bert_sim_score_threshold(top_n=3, time_window=None, threshold=0.):
+    """
+    Use threshold for cosine similarity
+    """
+    data_loader = DataLoader()
+    data_loader.load(posts_path)
+
+    qs, followup_qs = data_loader.questions_in_folder("", include_index=True, include_timestamp=True)
+    as1, followup_as1 = data_loader.questions_in_folder("assignment2", include_index=True, include_timestamp=True)
+
+    # load BERT embeddings
+    bert_s_s = BertSemanticSearch().from_files(bert_corpus, bert_corpus_embeddings)
+
+    # set up dupe mapping
+    dupes = load_pickle(dupe_path)
+    dupes_map = create_duplicate_map(dupes)
+
+    # evaluate
+    num_correct = 0
+    num_total = 0
+    pred_entry_len = {}
+
+    for i in range(len(as1)):
+        idx, text, timestamp = as1[i]
+        timestamp = timestamp.value // 10 ** 9  # convert to seconds
+
+        pred_idx = bert_s_s.single_semantic_search_using_threshold(text, 100, threshold=threshold)
+
+        # no time window given: check all posts that came before
+        if time_window is None:
+            pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
+                        qs[int(pidx)][2].value // 10 ** 9 < timestamp]
+
+        # time window given: check posts within specified number of days of asked question
+        else:
+            pred_idx = [qs[int(pidx)][0] for pidx in pred_idx if
+                        qs[int(pidx)][2].value // 10 ** 9 < timestamp <
+                        qs[int(pidx)][2].value // 10 ** 9 + time_window * 24 * 3600]
+
+        # count number of entries
+        num_entries = len(pred_idx)
+        if pred_entry_len.get(num_entries) is None:
+            pred_entry_len[num_entries] = 1
+        else:
+            pred_entry_len[num_entries] += 1
+
+        # see if one of the indices in the top n is a dupe provided that the current question has a dupe
+        if dupes_map.get(idx) is not None:
+            num_total += 1
+
+            for pidx in pred_idx:
+                if pidx in dupes_map[idx]:
+                    num_correct += 1
+                    break
+
+    x = [key for key, val in pred_entry_len.items()]
+    y = [val for key, val in pred_entry_len.items()]
+    plt.bar(x=x, height=y)
+    plt.title("Distribution of number of predictions for similarity threshold {0}".format(threshold))
     plt.show()
 
     return num_correct / num_total
@@ -399,5 +478,5 @@ if __name__ == "__main__":
     0.8735 for BERT
     0.5402 for USE
     """
-    acc = bert_sim_score()
+    acc = bert_sim_score_threshold(top_n=100, threshold=0.61)
     print("Duplicate accuracy: " + str(acc))
