@@ -1,11 +1,14 @@
-from piazza_api import Piazza
-from piazza_api.rpc import PiazzaRPC
 import pickle
-from bson.binary import Binary
+import sched
+import time
+import torch
+
 import numpy as np
-from bot.db import MongoDBManger
+from piazza_api import Piazza
+
 from Bert.basic_semantic_search import BertSemanticSearch
-import sched, time
+from bot.db import MongoDBManger
+
 
 class PiazzaBot(object):
 
@@ -32,11 +35,15 @@ class PiazzaBot(object):
                 query = {"cid": cid}
                 result = self.DB_manger.find(query)
                 db_dict = self.create_db_dict(post, result)
+
+                # TODO: remove HTML tags
+
                 if result is None and db_dict is not None:
                     self.DB_manger.insert(db_dict)
                     if not db_dict["is_marked"]:
                         self.create_piazza_bot_follow_up(cid, "Piazza Bot is trying to process this post")
                         self.make_private(db_dict)
+
                 elif db_dict is not None:
                     if not db_dict["is_processed"] and db_dict["is_marked"] and len(self.parallel_cid_list) != 0:
                         self.make_piazza_suggestions(db_dict, cid)
@@ -66,11 +73,14 @@ class PiazzaBot(object):
         corpus = []
         parallel_cid_list_local = []
         for doc in docs:
-            corpus.append(doc["content"])
+            corpus.append(pickle.loads(doc["encoding"]))
             parallel_cid_list_local.append(doc["cid"])
 
+        # turn list of loaded tensors to a single tensor
+        corpus = [torch.unsqueeze(t, dim=0) for t in corpus]
+        corpus = torch.cat(corpus, dim=0)
+
         self.bert.set_corpus(corpus)
-        self.bert.preprocess_corpus()
         self.parallel_cid_list = parallel_cid_list_local
 
     def create_db_dict(self, post, old_post):
@@ -110,7 +120,7 @@ class PiazzaBot(object):
                          "is_processed": is_processed}
             # generate a new embedding if this is first time this post is being added to the db or if there was a content update
             if old_post is None or revision > old_post["revision"]:
-                encoding = Binary(pickle.dumps(self.bert.encode_content(post_content)))
+                encoding = pickle.dumps(self.bert.encode_content(post_content))
                 print(encoding)
                 new_value["encoding"] = encoding
             return new_value
@@ -307,8 +317,6 @@ def run_bot_site_querey(sc):
    bot.heart_beat()
    print("done sequence")
    sch.enter(6000, 1, run_bot_site_querey, (sc,))
-
-
 
 
 if __name__ == "__main__":
