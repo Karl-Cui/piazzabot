@@ -115,7 +115,8 @@ def bert_sim_score(top_n=3, time_window=None):
     # evaluate
     num_correct = 0
     num_total = 0
-    score_cutoff = []
+    score_cutoff_no_dupe = []
+    score_cutoff_dupe = []
 
     for i in range(len(as1)):
         idx, text, timestamp = as1[i]
@@ -143,27 +144,35 @@ def bert_sim_score(top_n=3, time_window=None):
                     pred_idxs.append(qs[int(pidx)][0])
                     cutoffs.append(cutoff[j])
 
-        score_cutoff.append(min(cutoffs[:top_n]))
+        cutoff = min(cutoffs[:top_n])
         pred_idx = pred_idxs[:top_n]   # filter by top k entries
 
         # see if one of the indices in the top n is a dupe provided that the current question has a dupe
+        found = False
         if dupes_map.get(idx) is not None:
             num_total += 1
 
             for pidx in pred_idx:
                 if pidx in dupes_map[idx]:
                     num_correct += 1
+                    found = True
+                    score_cutoff_dupe.append(cutoff)
                     break
 
-    """Score cutoff analysis"""
-    score_cutoff = np.array(score_cutoff)
+        if not found:
+            score_cutoff_no_dupe.append(cutoff)
 
-    print("mean: ", np.mean(score_cutoff))
-    print("median: ", np.median(score_cutoff))
-    print("std: ", np.std(score_cutoff))
+    """Score cutoff analysis"""
+    score_cutoff_no_dupe = np.array(score_cutoff_no_dupe)
+    score_cutoff_dupe = np.array(score_cutoff_dupe)
+
+    # print("mean: ", np.mean(score_cutoff))
+    # print("median: ", np.median(score_cutoff))
+    # print("std: ", np.std(score_cutoff))
 
     # plot score cutoff
-    plt.hist(score_cutoff, bins=30)
+    plt.hist([score_cutoff_dupe, score_cutoff_no_dupe], bins=30, stacked=True)
+    plt.legend(["Posts with duplicates", "Posts with no duplicates"])
     plt.xlabel("Similarity score")
     plt.ylabel("Number of samples")
     plt.title("Distribution of similarity score cutoff for n={0}".format(top_n))
@@ -172,7 +181,7 @@ def bert_sim_score(top_n=3, time_window=None):
     return num_correct / num_total
 
 
-def bert_sim_score_threshold(top_n=3, time_window=None, threshold=0.):
+def bert_sim_score_threshold(time_window=None, threshold=0.):
     """
     Use threshold for cosine similarity
     """
@@ -192,7 +201,8 @@ def bert_sim_score_threshold(top_n=3, time_window=None, threshold=0.):
     # evaluate
     num_correct = 0
     num_total = 0
-    pred_entry_len = {}
+    pred_entry_len_dupe = {}
+    pred_entry_len_no_dupe = {}
 
     for i in range(len(as1)):
         idx, text, timestamp = as1[i]
@@ -213,24 +223,32 @@ def bert_sim_score_threshold(top_n=3, time_window=None, threshold=0.):
 
         # count number of entries
         num_entries = len(pred_idx)
-        if pred_entry_len.get(num_entries) is None:
-            pred_entry_len[num_entries] = 1
-        else:
-            pred_entry_len[num_entries] += 1
 
         # see if one of the indices in the top n is a dupe provided that the current question has a dupe
+        found = False
         if dupes_map.get(idx) is not None:
             num_total += 1
 
             for pidx in pred_idx:
                 if pidx in dupes_map[idx]:
                     num_correct += 1
+                    found = True
+                    pred_entry_len_dupe[num_entries] = pred_entry_len_dupe.get(num_entries, 0) + 1
                     break
 
-    x = [key for key, val in pred_entry_len.items()]
-    y = [val for key, val in pred_entry_len.items()]
-    plt.bar(x=x, height=y)
+        if not found:
+            pred_entry_len_no_dupe[num_entries] = pred_entry_len_no_dupe.get(num_entries, 0) + 1
+
+    x = [i for i in range(100)]
+    y_dupe = [pred_entry_len_dupe[i] if i in pred_entry_len_dupe else 0 for i in range(100)]
+    plt.bar(x=x, height=y_dupe)
+
+    y_no_dupe = [pred_entry_len_no_dupe[i] if i in pred_entry_len_no_dupe else 0 for i in range(100)]
+    plt.bar(x=x, height=y_no_dupe, bottom=y_dupe)
+
     plt.title("Distribution of number of predictions for similarity threshold {0}".format(threshold))
+    plt.xlabel("Number of predictions")
+    plt.ylabel("Number of posts")
     plt.show()
 
     return num_correct / num_total
@@ -478,5 +496,5 @@ if __name__ == "__main__":
     0.8735 for BERT
     0.5402 for USE
     """
-    acc = bert_sim_score_threshold(top_n=100, threshold=0.61)
+    acc = bert_sim_score(top_n=4)
     print("Duplicate accuracy: " + str(acc))
