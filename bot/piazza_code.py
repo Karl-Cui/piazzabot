@@ -15,6 +15,7 @@ class PiazzaBot(object):
     def __init__(self, user, password, class_id, corpus=None, corpus_embeddings=None, default_bert=True):
         self.p = Piazza()
         self.p.user_login(user, password)
+        self.class_id = class_id
         self.user_profile = self.p.get_user_profile()
         self.network = self.p.network(class_id)
         self.DB_manger = MongoDBManger()
@@ -310,6 +311,11 @@ class PiazzaBot(object):
         """
         return self.DB_manger.del_by_cid(cid)
 
+    def get_piazza_suggestions(self, query):
+        params = {"nid": self.class_id, "query": query}
+        r = self.network._rpc.request(method="network.find_similar", data=params)
+        return self.network._rpc._handle_error(r, "Could not get suggestions {}.".format(repr(params)))
+
 
 sch = sched.scheduler(time.time, time.sleep)
 bot = None
@@ -329,6 +335,8 @@ if __name__ == "__main__":
     bot = PiazzaBot(login[0], login[1], "kg9odngyfny6s9")
 
     print(bot.get_post(17))
+    print(bot.get_piazza_suggestions("When will we get out marks back <p>I am wondering when we will get our A1 marks back</p>"))
+    #query: "When will we get out marks back <p>I am wondering when we will get our A1 marks back</p>"
     sch.enter(6, 1, run_bot_site_querey, (sch,))
     sch.run()
 
