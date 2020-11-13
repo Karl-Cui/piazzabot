@@ -28,6 +28,9 @@ class BertSemanticSearch:
     def preprocess_corpus(self):
         self.corpus_embeddings = self.embedder.encode(self.corpus, convert_to_tensor=True)
 
+    def set_corpus_embeddings(self, corpus_embeddings):
+        self.corpus_embeddings = corpus_embeddings
+
     def encode_content(self, content):
         return self.embedder.encode(content, convert_to_tensor=True)
 

@@ -71,16 +71,19 @@ class PiazzaBot(object):
             return 1
 
         corpus = []
+        corpus_embeddings = []
         parallel_cid_list_local = []
         for doc in docs:
-            corpus.append(pickle.loads(doc["encoding"]))
+            corpus.append(doc["content"])
+            corpus_embeddings.append(pickle.loads(doc["encoding"]))
             parallel_cid_list_local.append(doc["cid"])
 
         # turn list of loaded tensors to a single tensor
-        corpus = [torch.unsqueeze(t, dim=0) for t in corpus]
-        corpus = torch.cat(corpus, dim=0)
+        corpus_embeddings = [torch.unsqueeze(t, dim=0) for t in corpus_embeddings]
+        corpus_embeddings = torch.cat(corpus_embeddings, dim=0)
 
         self.bert.set_corpus(corpus)
+        self.bert.set_corpus_embeddings(corpus_embeddings)
         self.parallel_cid_list = parallel_cid_list_local
 
     def create_db_dict(self, post, old_post):
@@ -321,7 +324,7 @@ def run_bot_site_querey(sc):
 
 if __name__ == "__main__":
     # corpus = r"C:\Users\sohai\Documents\Uni 2020\csc392\piazzabot\data\corpus.plk"
-    login = np.loadtxt(r"C:\Users\sohai\Documents\Uni 2020\csc392\login.txt", dtype=str)
+    login = np.loadtxt(r"C:\Users\karlc\Documents\ut\_y4\CSC492\login.txt", dtype=str)
 
     bot = PiazzaBot(login[0], login[1], "kg9odngyfny6s9")
 
