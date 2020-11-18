@@ -27,9 +27,8 @@ pred_save_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_
 piazza_pred = {}
 pred_keys = ['score', 'id']
 
-for q in qs:
-
-    content, subject = q
+for i in range(len(qs)):
+    content, subject = qs[i]
 
     # find piazza's recommendations for question from posts so far
     try:
@@ -49,8 +48,8 @@ for q in qs:
     )
     piazza_pred[res['id']] = pred
 
-    time.sleep(12.1)
-
-
+    if i % 10 == 10:
+        save_json(piazza_pred, pred_save_path)
+    time.sleep(6.1)
 
 save_json(piazza_pred, pred_save_path)
