@@ -21,21 +21,29 @@ login = np.loadtxt(r"C:\Users\karlc\Documents\ut\_y4\CSC492\login.txt", dtype=st
 bot = PiazzaBot(login[0], login[1], "kg9odngyfny6s9")
 
 # iterate through all questions
-piazza_pred = []
-for q in qs[:10]:
+piazza_pred = {}
+pred_keys = ['score', 'id']
+for q in qs:
 
     content, subject = q
 
     # find piazza's recommendations for question from posts so far
-    pred = bot.get_piazza_suggestions(content)
-    piazza_pred.append(pred)
+    try:
+        pred_raw = bot.get_piazza_suggestions(content)['list']
+    except KeyError:
+        continue
+
+    pred = []
+    for p in pred_raw:
+        pred.append({key: p[key] for key in pred_keys})
 
     # post the post
-    bot.create_post(
+    res = bot.create_post(
         post_folders=["general"],
         post_subject=subject,
         post_content=content
     )
+    piazza_pred[res['id']] = pred
 
 pred_save_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\piazza_pred.json"
 save_json(piazza_pred, pred_save_path)
