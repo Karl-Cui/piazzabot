@@ -7,6 +7,8 @@ from utils import save_json
 from bot.piazza_code import PiazzaBot
 from data_loader import DataLoader
 
+import time
+
 
 # load posts
 posts_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
@@ -21,8 +23,10 @@ login = np.loadtxt(r"C:\Users\karlc\Documents\ut\_y4\CSC492\login.txt", dtype=st
 bot = PiazzaBot(login[0], login[1], "kg9odngyfny6s9")
 
 # iterate through all questions
+pred_save_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\piazza_pred.json"
 piazza_pred = {}
 pred_keys = ['score', 'id']
+
 for q in qs:
 
     content, subject = q
@@ -45,5 +49,8 @@ for q in qs:
     )
     piazza_pred[res['id']] = pred
 
-pred_save_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\piazza_pred.json"
+    time.sleep(12.1)
+
+
+
 save_json(piazza_pred, pred_save_path)

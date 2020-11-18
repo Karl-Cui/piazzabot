@@ -3,6 +3,7 @@ import sched
 import time
 import torch
 
+import pandas as pd
 import numpy as np
 from piazza_api import Piazza
 
@@ -87,7 +88,7 @@ class PiazzaBot(object):
         self.bert.set_corpus_embeddings(corpus_embeddings)
         self.parallel_cid_list = parallel_cid_list_local
 
-    def create_db_dict(self, post, old_post):
+    def create_db_dict(self, post, old_post, tensor=True):
         """
         generate the embeddings for all the current posts in the data base
 
@@ -123,7 +124,7 @@ class PiazzaBot(object):
                          "mark_id": mark_id,
                          "is_processed": is_processed}
             # generate a new embedding if this is first time this post is being added to the db or if there was a content update
-            if old_post is None or revision > old_post["revision"]:
+            if tensor and (old_post is None or revision > old_post["revision"]):
                 encoding = pickle.dumps(self.bert.encode_content(post_content))
                 print(encoding)
                 new_value["encoding"] = encoding
@@ -334,6 +335,43 @@ class PiazzaBot(object):
         r = self.network._rpc.request(method="network.find_similar", data=params)
         return self.network._rpc._handle_error(r, "Could not get suggestions {}.".format(repr(params)))
 
+    def get_full_piazza(self):
+        posts = self.network.iter_all_posts()
+        dataframe_cols = ["cid", "content", "match 1", "match 2", "match 3"]
+        dataframe = pd.DataFrame(columns=dataframe_cols)
+        for post in posts:
+            db_dict = self.create_db_dict(post, None, False)
+            if db_dict is None:
+                continue
+            content = db_dict["content"]
+            result = self.get_piazza_suggestions(content)
+            cid = db_dict["cid"]
+            try:
+                suggestions = result["list"]
+            except KeyError:
+                continue
+
+            counter = 0
+            new_row = {"cid": cid, "content": content, "match 1 cid": "None", "match 2 cid": "None",
+                       "match 3 cid": "None"}
+            for suggestion in suggestions:
+                if suggestion['id'] != cid:
+                    if counter == 0:
+                        new_row["match 1 cid"] = suggestion['id']
+                    elif counter == 1:
+                        new_row["match 2 cid"] = suggestion['id']
+                    elif counter == 2:
+                        new_row["match 3 cid"] = suggestion['id']
+                        break
+                    counter += 1
+
+            dataframe = dataframe.append(new_row, ignore_index=True)
+
+        dataframe.to_csv(r"C:\Users\sohai\Documents\Uni 2020\csc392\piazzabot\data\paizza_api_matchs.csv")
+
+
+
+
 
 sch = sched.scheduler(time.time, time.sleep)
 bot = None
@@ -348,20 +386,16 @@ def run_bot_site_querey(sc):
 
 if __name__ == "__main__":
     # corpus = r"C:\Users\sohai\Documents\Uni 2020\csc392\piazzabot\data\corpus.plk"
-    login = np.loadtxt(r"C:\Users\karlc\Documents\ut\_y4\CSC492\login.txt", dtype=str)
+    login = np.loadtxt(r"C:\Users\sohai\Documents\Uni 2020\csc392\login.txt", dtype=str)
 
     bot = PiazzaBot(login[0], login[1], "kg9odngyfny6s9")
-    bot.create_post(
-        post_folders=["general"],
-        post_subject="test title",
-        post_content="test content of post asking a question lorem ipsum"
-    )
 
-    # print(bot.get_post(17))
-    # print(bot.get_piazza_suggestions("When will we get out marks back <p>I am wondering when we will get our A1 marks back</p>"))
-    # #query: "When will we get out marks back <p>I am wondering when we will get our A1 marks back</p>"
-    # sch.enter(6, 1, run_bot_site_querey, (sch,))
-    # sch.run()
+    print(bot.get_post(17))
+    print(bot.get_piazza_suggestions("<p>I am wondering when we will get our A1 marks back</p>"))
+    bot.get_full_piazza()
+    #query: "When will we get out marks back <p>I am wondering when we will get our A1 marks back</p>"
+    #sch.enter(6, 1, run_bot_site_querey, (sch,))
+    #sch.run()
 
 
 
