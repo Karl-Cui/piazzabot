@@ -36,8 +36,8 @@ class DataLoader:
         posts = self.data[mask.values]
 
         questions, followup_questions = DataLoader.filter_latest_questions(posts,
-                                                                           include_index=include_index,
-                                                                           include_timestamp=include_timestamp)
+                                                                           index=include_index,
+                                                                           timestamp=include_timestamp)
         return questions, followup_questions
 
     #
@@ -45,12 +45,12 @@ class DataLoader:
     #
 
     @staticmethod
-    def filter_latest_questions(posts, include_index=False, include_timestamp=False):
+    def filter_latest_questions(posts, index=False, timestamp=False, subject=False):
         questions = {}
         followup_questions = {}
 
         # filter by only relevant fields
-        posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At']]
+        posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At', "Subject"]]
 
         # drop if any field contains invalid values
         posts.dropna(inplace=True)
@@ -61,20 +61,25 @@ class DataLoader:
             # index 2 is submission with HTML removed
             # index 3 is part of post
             # index 4 is timestamp
+            # index 5 is subject
 
             if row[3] == "started_off_question" or row[3] == "updated_question":
                 questions[row[1]] = [row[2]]
-                if include_index:
+                if index:
                     questions[row[1]] = [row[0]] + questions[row[1]]
-                if include_timestamp:
+                if timestamp:
                     questions[row[1]].append(row[4])
+                if subject:
+                    questions[row[1]].append(row[5])
 
             elif row[3] == "followup":
                 followup_questions[row[1]] = [row[2]]
-                if include_index:
+                if index:
                     followup_questions[row[1]] = [row[0]] + followup_questions[row[1]]
-                if include_timestamp:
+                if timestamp:
                     followup_questions[row[1]].append(row[4])
+                if subject:
+                    followup_questions[row[1]].append(row[5])
 
         questions = list(questions.values())
         followup_questions = list(followup_questions.values())
@@ -88,6 +93,24 @@ class DataLoader:
     @staticmethod
     def filter_latest_answers(posts):
         pass
+
+    #
+    #   Getters and setters
+    #
+
+    def get_data(self):
+        return self.data
+
+    def get_all_questions(self):
+        """
+        Return dataframe only containing questions
+
+        :return: pandas dataframe
+        """
+        return self.data[
+            (self.data["Part of Post"] == "started_off_question") |
+            (self.data["Part of Post"] == "updated_question")
+        ]
 
 
 if __name__ == "__main__":

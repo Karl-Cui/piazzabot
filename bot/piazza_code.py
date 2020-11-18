@@ -215,6 +215,24 @@ class PiazzaBot(object):
             uid = ""
         return uid
 
+    def create_post(self, post_folders, post_subject, post_content, post_type="question", is_announcement=0,
+                    bypass_email=0, anonymous=False):
+        """
+        For simulating asking a question on Piazza. See the Piazza package for full documentation.
+
+        NOTE: post_folders is actually a list of string, not a single string
+        """
+        info = self.network.create_post(
+            post_type=post_type,
+            post_folders=post_folders,
+            post_subject=post_subject,
+            post_content=post_content,
+            is_announcement=is_announcement,
+            bypass_email=bypass_email,
+            anonymous=anonymous
+        )
+        return info
+
     def update_post(self, cid, post_type, revision, post_folders, post_subject, post_content, visibility_all=True):
         """Update a post
 
@@ -333,12 +351,17 @@ if __name__ == "__main__":
     login = np.loadtxt(r"C:\Users\karlc\Documents\ut\_y4\CSC492\login.txt", dtype=str)
 
     bot = PiazzaBot(login[0], login[1], "kg9odngyfny6s9")
+    bot.create_post(
+        post_folders=["general"],
+        post_subject="test title",
+        post_content="test content of post asking a question lorem ipsum"
+    )
 
-    print(bot.get_post(17))
-    print(bot.get_piazza_suggestions("When will we get out marks back <p>I am wondering when we will get our A1 marks back</p>"))
-    #query: "When will we get out marks back <p>I am wondering when we will get our A1 marks back</p>"
-    sch.enter(6, 1, run_bot_site_querey, (sch,))
-    sch.run()
+    # print(bot.get_post(17))
+    # print(bot.get_piazza_suggestions("When will we get out marks back <p>I am wondering when we will get our A1 marks back</p>"))
+    # #query: "When will we get out marks back <p>I am wondering when we will get our A1 marks back</p>"
+    # sch.enter(6, 1, run_bot_site_querey, (sch,))
+    # sch.run()
 
 
 
