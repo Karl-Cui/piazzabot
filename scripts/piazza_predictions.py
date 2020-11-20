@@ -23,7 +23,7 @@ login = np.loadtxt(r"C:\Users\karlc\Documents\ut\_y4\CSC492\login.txt", dtype=st
 bot = PiazzaBot(login[0], login[1], "kg9odngyfny6s9")
 
 # iterate through all questions
-pred_save_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\piazza_pred.json"
+pred_save_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\piazza_pred_"
 piazza_pred = {}
 pred_keys = ['score', 'id']
 
@@ -41,15 +41,19 @@ for i in range(len(qs)):
         pred.append({key: p[key] for key in pred_keys})
 
     # post the post
-    res = bot.create_post(
-        post_folders=["general"],
-        post_subject=subject,
-        post_content=content
-    )
-    piazza_pred[res['id']] = pred
+    try:
+        res = bot.create_post(
+            post_folders=["general"],
+            post_subject=subject,
+            post_content=content
+        )
+        piazza_pred[res['id']] = pred
 
-    if i % 10 == 10:
-        save_json(piazza_pred, pred_save_path)
-    time.sleep(6.1)
+        if i % 50 == 0:
+            save_json(piazza_pred, pred_save_path + str(i) + ".json")
+        time.sleep(6.1)
+
+    except:
+        continue
 
 save_json(piazza_pred, pred_save_path)
