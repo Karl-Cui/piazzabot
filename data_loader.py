@@ -45,7 +45,7 @@ class DataLoader:
     #
 
     @staticmethod
-    def filter_latest_questions(posts, index=False, timestamp=False, subject=False):
+    def filter_latest_questions(posts, index=True, timestamp=False, subject=False):
         questions = {}
         followup_questions = {}
 
