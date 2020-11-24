@@ -15,9 +15,8 @@ class DataLoader:
         """
         df = pd.read_csv(path)
 
-        # sort by date
+        # convert dates into date format
         df["Created At"] = pd.to_datetime(df["Created At"])
-        df.sort_values(by="Created At", inplace=True)
 
         self.data = df
 
@@ -36,6 +35,9 @@ class DataLoader:
         # TODO: this isn't perfect! if we filter by "lecture" we might also get "pre-lecture_prep" for example
         mask = self.data.Folders.str.contains(folder, regex=False, na=False)    # N/A values get defaulted to False
         posts = self.data[mask.values]
+
+        # sort by date
+        posts.sort_values(by="Created At", inplace=True)
 
         questions, followup_questions = DataLoader.filter_latest_questions(posts,
                                                                            index=index,
@@ -58,7 +60,7 @@ class DataLoader:
         followup_questions = {}
 
         # filter by only relevant fields
-        posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At', "Subject", "id"]]
+        posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At', 'Subject', 'id']]
 
         # drop if any field contains invalid values
         posts.dropna(subset=['Submission HTML Removed'], inplace=True)
@@ -92,7 +94,7 @@ class DataLoader:
                 if subject:
                     followup_questions[row[1]].append(row[5])
                 if qid:
-                    questions[row[1]].append(row[6])
+                    followup_questions[row[1]].append(row[6])
 
         questions = list(questions.values())
         followup_questions = list(followup_questions.values())
@@ -102,10 +104,6 @@ class DataLoader:
             followup_questions = [q[0] for q in questions]
 
         return questions, followup_questions
-
-    @staticmethod
-    def filter_latest_answers(posts):
-        pass
 
     #
     #   Getters and setters
@@ -131,5 +129,5 @@ if __name__ == "__main__":
     data_loader = DataLoader()
     data_loader.load(posts_path)
 
-    qs, followup_qs = data_loader.questions_in_folder("lecture", include_index=True)
+    qs, followup_qs = data_loader.questions_in_folder("lecture", index=True)
     print(qs)

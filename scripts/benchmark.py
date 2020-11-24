@@ -505,26 +505,27 @@ def piazza_pred(top_n=3):
     for i in range(len(a2)):
         idx, _, qid = a2[i]
 
-        if dupes_map.get(idx) is not None:
+        if dupes_map.get(idx) is not None and matches.get(qid) is not None:
 
             pred_id = matches[qid]
             pred_id = [p['id'] for p in pred_id]   # only take ids
-            pred_id = pred_id[:top_n]              # filter by top k entries
+            pred_id = pred_id                      # filter by top k entries
 
             try:
                 pred_idx = [id_to_idx[p] for p in pred_id]   # convert from ID to index
+
+                # see if one of the indices in the top n is a dupe provided that the current question has a dupe
+                num_total += 1
+
+                for pidx in pred_idx:
+                    if pidx in dupes_map[idx]:
+                        num_correct += 1
+                        break
+
             except KeyError:
                 num_keyerror += 1
 
-            # see if one of the indices in the top n is a dupe provided that the current question has a dupe
-            num_total += 1
-
-            for pidx in pred_idx:
-                if pidx in dupes_map[idx]:
-                    num_correct += 1
-                    break
-
-    print(num_total, num_keyerror)
+    print("Num KeyErrors: ", num_keyerror)
     return num_correct / num_total
 
 

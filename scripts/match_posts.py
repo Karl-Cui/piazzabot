@@ -90,7 +90,7 @@ def update_csv(matches_path, csv_path):
         if i in index_to_id:
             df.at[i, "id"] = index_to_id[i]
 
-    df.to_csv(csv_path)
+    df.to_csv(csv_path, index=False)
 
 
 if __name__ == "__main__":
