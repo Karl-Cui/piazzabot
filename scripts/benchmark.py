@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 posts_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
 preproc_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\data.pkl"
 dupe_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\dupes.pkl"
+piazza_match_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\piazza_pred.json"
 
 # BERT
 bert_corpus = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus.pkl"
@@ -42,8 +43,8 @@ def benchmark_bert():
     data_loader = DataLoader()
     data_loader.load(posts_path)
 
-    qs, followup_qs = data_loader.questions_in_folder("", include_index=True)
-    as1, followup_as1 = data_loader.questions_in_folder("assignment2", include_index=True)
+    qs, followup_qs = data_loader.questions_in_folder("", index=True)
+    a2, followup_a2 = data_loader.questions_in_folder("assignment2", index=True)
 
     # load BERT embeddings
     bert_s_s = BertSemanticSearch().from_files(bert_corpus, bert_corpus_embeddings)
@@ -56,8 +57,8 @@ def benchmark_bert():
     num_correct = 0
     num_total = 0
 
-    for i in range(len(as1)):
-        idx, text = as1[i]
+    for i in range(len(a2)):
+        idx, text = a2[i]
         pred_idx = bert_s_s.single_semantic_search(text, 4)
         pred_idx = [qs[int(pred_idx)][0] for pred_idx in pred_idx[1:]]
 
@@ -102,8 +103,8 @@ def bert_sim_score(top_n=3, time_window=None):
     data_loader = DataLoader()
     data_loader.load(posts_path)
 
-    qs, followup_qs = data_loader.questions_in_folder("", include_index=True, include_timestamp=True)
-    as1, followup_as1 = data_loader.questions_in_folder("assignment2", include_index=True, include_timestamp=True)
+    qs, followup_qs = data_loader.questions_in_folder("", index=True, timestamp=True)
+    a2, followup_a2 = data_loader.questions_in_folder("assignment2", index=True, timestamp=True)
 
     # load BERT embeddings
     bert_s_s = BertSemanticSearch().from_files(bert_corpus, bert_corpus_embeddings)
@@ -118,8 +119,8 @@ def bert_sim_score(top_n=3, time_window=None):
     score_cutoff_no_dupe = []
     score_cutoff_dupe = []
 
-    for i in range(len(as1)):
-        idx, text, timestamp = as1[i]
+    for i in range(len(a2)):
+        idx, text, timestamp = a2[i]
         timestamp = timestamp.value // 10 ** 9  # convert to seconds
 
         pred_idx, cutoff = bert_s_s.single_semantic_search_with_similarity(text, 100)
@@ -188,8 +189,8 @@ def bert_sim_score_threshold(time_window=None, threshold=0.):
     data_loader = DataLoader()
     data_loader.load(posts_path)
 
-    qs, followup_qs = data_loader.questions_in_folder("", include_index=True, include_timestamp=True)
-    as1, followup_as1 = data_loader.questions_in_folder("assignment2", include_index=True, include_timestamp=True)
+    qs, followup_qs = data_loader.questions_in_folder("", index=True, timestamp=True)
+    a2, followup_a2 = data_loader.questions_in_folder("assignment2", index=True, timestamp=True)
 
     # load BERT embeddings
     bert_s_s = BertSemanticSearch().from_files(bert_corpus, bert_corpus_embeddings)
@@ -204,8 +205,8 @@ def bert_sim_score_threshold(time_window=None, threshold=0.):
     pred_entry_len_dupe = {}
     pred_entry_len_no_dupe = {}
 
-    for i in range(len(as1)):
-        idx, text, timestamp = as1[i]
+    for i in range(len(a2)):
+        idx, text, timestamp = a2[i]
         timestamp = timestamp.value // 10 ** 9  # convert to seconds
 
         pred_idx = bert_s_s.single_semantic_search_using_threshold(text, 100, threshold=threshold)
@@ -258,7 +259,7 @@ def benchmark_cosine_sim():
     data_loader = DataLoader()
     data_loader.load(posts_path)
 
-    qs, followup_qs = data_loader.questions_in_folder("assignment2", include_index=True)
+    qs, followup_qs = data_loader.questions_in_folder("assignment2", index=True)
 
     # # preprocess while still preserving index
     # preproc = Preprocess()
@@ -306,7 +307,7 @@ def benchmark_use():
     data_loader = DataLoader()
     data_loader.load(posts_path)
 
-    qs, followup_qs = data_loader.questions_in_folder("assignment2", include_index=True)
+    qs, followup_qs = data_loader.questions_in_folder("assignment2", index=True)
     data = [q[1] for q in qs]
 
     # embed using universal sentence encoder and calculate cosine similarities
@@ -361,7 +362,7 @@ def filter_window_cos_sim(top_n=3, time_window=None):
     data_loader = DataLoader()
     data_loader.load(posts_path)
 
-    qs, followup_qs = data_loader.questions_in_folder("assignment2", include_index=True, include_timestamp=True)
+    qs, followup_qs = data_loader.questions_in_folder("assignment2", index=True, timestamp=True)
 
     # # preprocess while still preserving index
     # preproc = Preprocess()
@@ -430,8 +431,8 @@ def filter_window_bert(top_n=3, time_window=None):
     data_loader = DataLoader()
     data_loader.load(posts_path)
 
-    qs, followup_qs = data_loader.questions_in_folder("", include_index=True, include_timestamp=True)
-    as1, followup_as1 = data_loader.questions_in_folder("assignment2", include_index=True, include_timestamp=True)
+    qs, followup_qs = data_loader.questions_in_folder("", index=True, timestamp=True)
+    a2, followup_a2 = data_loader.questions_in_folder("assignment2", index=True, timestamp=True)
 
     # load BERT embeddings
     bert_s_s = BertSemanticSearch().from_files(bert_corpus, bert_corpus_embeddings)
@@ -444,8 +445,8 @@ def filter_window_bert(top_n=3, time_window=None):
     num_correct = 0
     num_total = 0
 
-    for i in range(len(as1)):
-        idx, text, timestamp = as1[i]
+    for i in range(len(a2)):
+        idx, text, timestamp = a2[i]
         timestamp = timestamp.value // 10 ** 9  # convert to seconds
 
         pred_idx = bert_s_s.single_semantic_search(text, 100)
@@ -475,6 +476,58 @@ def filter_window_bert(top_n=3, time_window=None):
     return num_correct / num_total
 
 
+def piazza_pred(top_n=3):
+    """
+    Evaluate accuracy of piazza's duplicate predictions
+
+    :param top_n: see if correct prediction is in top n predictions
+    :return: duplicate detection accuracy
+    """
+    data_loader = DataLoader()
+    data_loader.load(posts_path)
+
+    qs, followup_qs = data_loader.questions_in_folder("", index=True, timestamp=False, qid=True)
+    a2, followup_a2 = data_loader.questions_in_folder("assignment2", index=True, timestamp=False, qid=True)
+
+    # load matches by Piazza (note that these are already sorted by some sort of confidence score)
+    matches = load_json(piazza_match_path)
+    id_to_idx = {q[-1]: q[0] for q in qs}   # mapping from a question's ID to its index
+
+    # set up dupe mapping
+    dupes = load_pickle(dupe_path)
+    dupes_map = create_duplicate_map(dupes)
+
+    # evaluate
+    num_correct = 0
+    num_total = 0
+    num_keyerror = 0
+
+    for i in range(len(a2)):
+        idx, _, qid = a2[i]
+
+        if dupes_map.get(idx) is not None:
+
+            pred_id = matches[qid]
+            pred_id = [p['id'] for p in pred_id]   # only take ids
+            pred_id = pred_id[:top_n]              # filter by top k entries
+
+            try:
+                pred_idx = [id_to_idx[p] for p in pred_id]   # convert from ID to index
+            except KeyError:
+                num_keyerror += 1
+
+            # see if one of the indices in the top n is a dupe provided that the current question has a dupe
+            num_total += 1
+
+            for pidx in pred_idx:
+                if pidx in dupes_map[idx]:
+                    num_correct += 1
+                    break
+
+    print(num_total, num_keyerror)
+    return num_correct / num_total
+
+
 if __name__ == "__main__":
     """
     n = 1
@@ -496,5 +549,8 @@ if __name__ == "__main__":
     0.8735 for BERT
     0.5402 for USE
     """
-    acc = bert_sim_score(top_n=4)
-    print("Duplicate accuracy: " + str(acc))
+    acc = filter_window_bert(top_n=3)
+    print("BERT duplicate accuracy: " + str(acc))
+
+    acc = piazza_pred(top_n=3)
+    print("Piazza duplicate accuracy: " + str(acc))

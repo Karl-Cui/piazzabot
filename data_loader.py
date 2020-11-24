@@ -21,13 +21,15 @@ class DataLoader:
 
         self.data = df
 
-    def questions_in_folder(self, folder, include_index=False, include_timestamp=False):
+    def questions_in_folder(self, folder, index=False, timestamp=False, subject=False, qid=False):
         """
         Return all questions from a folder
 
         :param folder: name of folder to filter posts by
-        :param include_index: if True, will return question index with question
-        :param include_timestamp: if True will include timestamp with question
+        :param index: if True, will return question index with question
+        :param timestamp: if True will include timestamp with question
+        :param subject: if True will include post title with question
+        :param qid: if True will include post ID with question
         :return: list of questions, list of follow-up (probably) questions
         """
         # filter by posts from a folder
@@ -36,8 +38,10 @@ class DataLoader:
         posts = self.data[mask.values]
 
         questions, followup_questions = DataLoader.filter_latest_questions(posts,
-                                                                           index=include_index,
-                                                                           timestamp=include_timestamp)
+                                                                           index=index,
+                                                                           timestamp=timestamp,
+                                                                           subject=subject,
+                                                                           qid=qid)
         return questions, followup_questions
 
     #
@@ -45,23 +49,28 @@ class DataLoader:
     #
 
     @staticmethod
-    def filter_latest_questions(posts, index=True, timestamp=False, subject=False):
+    def filter_latest_questions(posts, index=True, timestamp=False, subject=False, qid=False):
+        """
+        Find questions given a dataframe, and include information from different fields if needed. See
+        questions_in_folder() method for list of fields.
+        """
         questions = {}
         followup_questions = {}
 
         # filter by only relevant fields
-        posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At', "Subject"]]
+        posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At', "Subject", "id"]]
 
         # drop if any field contains invalid values
-        posts.dropna(inplace=True)
+        posts.dropna(subset=['Submission HTML Removed'], inplace=True)
 
         for row in posts.itertuples(index=True):
-            # index 0 is the original index
-            # index 1 is post number
-            # index 2 is submission with HTML removed
-            # index 3 is part of post
-            # index 4 is timestamp
-            # index 5 is subject
+            # row[0] is the original index
+            # row[1] is post number
+            # row[2] is submission with HTML removed
+            # row[3] is part of post
+            # row[4] is timestamp
+            # row[5] is subject
+            # row[6] is id
 
             if row[3] == "started_off_question" or row[3] == "updated_question":
                 questions[row[1]] = [row[2]]
@@ -71,6 +80,8 @@ class DataLoader:
                     questions[row[1]].append(row[4])
                 if subject:
                     questions[row[1]].append(row[5])
+                if qid:
+                    questions[row[1]].append(row[6])
 
             elif row[3] == "followup":
                 followup_questions[row[1]] = [row[2]]
@@ -80,6 +91,8 @@ class DataLoader:
                     followup_questions[row[1]].append(row[4])
                 if subject:
                     followup_questions[row[1]].append(row[5])
+                if qid:
+                    questions[row[1]].append(row[6])
 
         questions = list(questions.values())
         followup_questions = list(followup_questions.values())
