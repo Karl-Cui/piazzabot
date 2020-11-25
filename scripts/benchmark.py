@@ -424,6 +424,8 @@ def filter_window_bert(top_n=3, time_window=None):
     Before current time:    0.5690
     2 weeks before:         0.5000
 
+    Evaluate BERT predictions but only for posts before the time of the current post we are evaluating
+
     :param top_n: see if correct prediction is in top n predictions
     :param time_window: number of days before post to check for duplicates
     :return: duplicate detection accuracy
@@ -478,6 +480,8 @@ def filter_window_bert(top_n=3, time_window=None):
 
 def piazza_pred(top_n=3):
     """
+    n = 3: 0.3910
+
     Evaluate accuracy of piazza's duplicate predictions
 
     :param top_n: see if correct prediction is in top n predictions
@@ -500,7 +504,6 @@ def piazza_pred(top_n=3):
     # evaluate
     num_correct = 0
     num_total = 0
-    num_keyerror = 0
 
     for i in range(len(a2)):
         idx, _, qid = a2[i]
@@ -508,24 +511,21 @@ def piazza_pred(top_n=3):
         if dupes_map.get(idx) is not None and matches.get(qid) is not None:
 
             pred_id = matches[qid]
-            pred_id = [p['id'] for p in pred_id]   # only take ids
-            pred_id = pred_id                      # filter by top k entries
+            pred_id = [p['id'] for p in pred_id]                # only take ids
 
-            try:
-                pred_idx = [id_to_idx[p] for p in pred_id]   # convert from ID to index
+            pred_idx = [id_to_idx.get(p, '') for p in pred_id]  # convert from ID to index
+            pred_idx = [p for p in pred_idx if p != '']         # remove invalid entries
 
-                # see if one of the indices in the top n is a dupe provided that the current question has a dupe
-                num_total += 1
+            pred_idx = pred_idx[:top_n]                         # filter by top k entries
 
-                for pidx in pred_idx:
-                    if pidx in dupes_map[idx]:
-                        num_correct += 1
-                        break
+            # see if one of the indices in the top n is a dupe provided that the current question has a dupe
+            num_total += 1
 
-            except KeyError:
-                num_keyerror += 1
+            for pidx in pred_idx:
+                if pidx in dupes_map[idx]:
+                    num_correct += 1
+                    break
 
-    print("Num KeyErrors: ", num_keyerror)
     return num_correct / num_total
 
 
