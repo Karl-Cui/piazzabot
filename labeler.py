@@ -9,7 +9,7 @@ class Labeler:
         self.save_path = save_path
         self.labels = set()
 
-        if os.path.exists(save_path):
+        if save_path is not None and os.path.exists(save_path):
             self.load(self.save_path)
 
     def label(self, text, text_idx, choices, choices_idx):
