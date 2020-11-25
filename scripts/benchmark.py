@@ -582,6 +582,52 @@ def piazza_pred(top_n=3):
     return num_correct / num_total
 
 
+def compare_bert_and_piazza(top_n=3):
+    data_loader = DataLoader()
+    data_loader.load(posts_path)
+
+    qs, followup_qs = data_loader.questions_in_folder("", index=True, timestamp=True, qid=True)
+    matches = load_json(piazza_match_path)
+    id_to_idx = {q[-1]: q[0] for q in qs}
+
+    bert_s_s = BertSemanticSearch().from_files(bert_corpus, bert_corpus_embeddings)
+
+    num_overlap = [0, 0, 0, 0]
+
+    for i in range(len(qs)):
+        idx, text, timestamp, qid = qs[i]
+        timestamp = timestamp.value // 10 ** 9  # convert to seconds
+
+        if matches.get(qid) is not None:
+
+            # predictions from BERT
+            bert_idx = bert_s_s.single_semantic_search(text, 100)
+            bert_idx = [qs[int(pidx)][0] for pidx in bert_idx if
+                        qs[int(pidx)][2].value // 10 ** 9 < timestamp]
+            bert_idx = bert_idx[:top_n]
+
+            # predictions from piazza
+            pred_idx = matches[qid]
+            pred_idx = [p['id'] for p in pred_idx]  # only take ids
+            pred_idx = [id_to_idx[p] for p in pred_idx if p in id_to_idx]  # convert from ID to index
+            pred_idx = pred_idx[:top_n]
+
+            # counter overlaps
+            overlap = 0
+            for i in bert_idx:
+                if i in pred_idx:
+                    overlap += 1
+
+            num_overlap[overlap] += 1
+
+    # plot overlaps
+    plt.bar(x=[i for i in range(4)], height=num_overlap)
+    plt.xlabel("Number of overlaps")
+    plt.ylabel("Number of samples")
+    plt.title("Overlaps Between BERT Predictions and Piazza Predictions for n={0}".format(top_n))
+    plt.show()
+
+
 if __name__ == "__main__":
     """
     n = 1
@@ -606,5 +652,5 @@ if __name__ == "__main__":
     # acc = filter_window_bert(top_n=3)
     # print("BERT duplicate accuracy: " + str(acc))
 
-    acc = piazza_pred(top_n=3)
+    acc = compare_bert_and_piazza(top_n=3)
     print("Piazza duplicate accuracy: " + str(acc))
