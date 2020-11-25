@@ -480,7 +480,11 @@ def filter_window_bert(top_n=3, time_window=None):
 
 def piazza_pred(top_n=3):
     """
+    n = 1: 0.2244
+    n = 2: 0.3269
     n = 3: 0.3910
+    n = 5: 0.4551
+    n = 10: 0.5064
 
     Evaluate accuracy of piazza's duplicate predictions
 
@@ -496,6 +500,20 @@ def piazza_pred(top_n=3):
     # load matches by Piazza (note that these are already sorted by some sort of confidence score)
     matches = load_json(piazza_match_path)
     id_to_idx = {q[-1]: q[0] for q in qs}   # mapping from a question's ID to its index
+
+    """Plot all scores"""
+    # matches = list(matches.values())
+    # matches = [[p['score'] for p in m] for m in matches]
+    # match = []
+    # for m in matches:
+    #     match.extend(m)
+    #
+    # plt.hist(match, bins=50, stacked=True)
+    # # plt.legend(["Posts with duplicates", "Posts with no duplicates"])
+    # plt.xlabel("Similarity score")
+    # plt.ylabel("Number of samples")
+    # plt.title("Distribution of Piazza's Prediction Scores")
+    # plt.show()
 
     # set up dupe mapping
     dupes = load_pickle(dupe_path)
@@ -529,7 +547,7 @@ def piazza_pred(top_n=3):
                     score_dupe[p[1]] = p[0]
                     num_correct += 1
                     # found = True
-                    # break
+                    break
 
                 else:
                     score_no_dupe[p[1]] = p[0]
@@ -549,17 +567,17 @@ def piazza_pred(top_n=3):
     # save_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\dupe_check.pkl"
     # save_pickle(to_label, save_path)
 
-    """Score cutoff analysis"""
-    score_no_dupe = np.array(list(score_no_dupe.values()))
-    score_dupe = np.array(list(score_dupe.values()))
-
-    # plot score cutoff
-    plt.hist([score_dupe, score_no_dupe], bins=30, stacked=True)
-    plt.legend(["Posts with duplicates", "Posts with no duplicates"])
-    plt.xlabel("Similarity score")
-    plt.ylabel("Number of samples")
-    plt.title("Distribution of Piazza's score for n={0}".format(top_n))
-    plt.show()
+    """Score and duplicate analysis"""
+    # score_no_dupe = np.array(list(score_no_dupe.values()))
+    # score_dupe = np.array(list(score_dupe.values()))
+    #
+    # # plot score cutoff
+    # plt.hist([score_dupe, score_no_dupe], bins=30, stacked=True)
+    # plt.legend(["Posts with duplicates", "Posts with no duplicates"])
+    # plt.xlabel("Similarity score")
+    # plt.ylabel("Number of samples")
+    # plt.title("Distribution of Piazza's score for n={0}".format(top_n))
+    # plt.show()
 
     return num_correct / num_total
 
