@@ -21,7 +21,7 @@ if __name__ == "__main__":
     dupe_check = load_pickle(dupe_check_path)
 
     # label dataset
-    labeler = Labeler('')
+    labeler = Labeler()
 
     # # randomly select 100
     # indices = random.sample([i for i in range(len(dupe_check))], 100)

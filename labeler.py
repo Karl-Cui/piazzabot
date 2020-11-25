@@ -1,5 +1,6 @@
 from utils import *
 import os
+import warnings
 
 
 class Labeler:
@@ -49,7 +50,7 @@ class Labeler:
         if path is None:
 
             if self.save_path is None:
-                return Exception("No path given to save labels")
+                warnings.warn("No path given to save labels")
 
             path = self.save_path
 
@@ -59,7 +60,7 @@ class Labeler:
         if path is None:
 
             if self.save_path is None:
-                return Exception("No path given to load labels from")
+                warnings.warn("No path given to load labels from")
 
             path = self.save_path
 

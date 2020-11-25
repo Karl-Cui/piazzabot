@@ -60,7 +60,10 @@ class DataLoader:
         followup_questions = {}
 
         # filter by only relevant fields
-        posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At', 'Subject', 'id']]
+        if qid:
+            posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At', 'Subject', 'id']]
+        else:
+            posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At', 'Subject']]
 
         # drop if any field contains invalid values
         posts.dropna(subset=['Submission HTML Removed'], inplace=True)
