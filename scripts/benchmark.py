@@ -505,7 +505,10 @@ def piazza_pred(top_n=3):
     num_correct = 0
     num_total = 0
 
-    to_label = []
+    score_no_dupe = {}
+    score_dupe = {}
+
+    # to_label = []
 
     for i in range(len(a2)):
         idx, _, qid = a2[i]
@@ -513,21 +516,25 @@ def piazza_pred(top_n=3):
         if dupes_map.get(idx) is not None and matches.get(qid) is not None:
 
             pred_idx = matches[qid]
-            pred_idx = [p['id'] for p in pred_idx]                          # only take ids
-            pred_idx = [id_to_idx[p] for p in pred_idx if p in id_to_idx]   # convert from ID to index
-            pred_idx = pred_idx[:top_n]                                     # filter by top k entries
+            pred_idx = [(p['score'], p['id']) for p in pred_idx]                         # only take ids
+            pred_idx = [(p[0], id_to_idx[p[1]]) for p in pred_idx if p[1] in id_to_idx]  # convert from ID to index
+            pred_idx = pred_idx[:top_n]                                                  # filter by top k entries
 
             # see if one of the indices in the top n is a dupe provided that the current question has a dupe
             num_total += 1
-            # found_correct = False
+            # found = False
 
-            for pidx in pred_idx:
-                if pidx in dupes_map[idx]:
+            for p in pred_idx:
+                if p[1] in dupes_map[idx]:
+                    score_dupe[p[1]] = p[0]
                     num_correct += 1
-                    # found_correct = True
-                    break
+                    # found = True
+                    # break
 
-            # if not found_correct:
+                else:
+                    score_no_dupe[p[1]] = p[0]
+
+            # if not found:
             #     to_label.append([idx] + pred_idx)
 
         # elif dupes_map.get(idx) is None and matches.get(qid) is not None:
@@ -541,6 +548,18 @@ def piazza_pred(top_n=3):
 
     # save_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\dupe_check.pkl"
     # save_pickle(to_label, save_path)
+
+    """Score cutoff analysis"""
+    score_no_dupe = np.array(list(score_no_dupe.values()))
+    score_dupe = np.array(list(score_dupe.values()))
+
+    # plot score cutoff
+    plt.hist([score_dupe, score_no_dupe], bins=30, stacked=True)
+    plt.legend(["Posts with duplicates", "Posts with no duplicates"])
+    plt.xlabel("Similarity score")
+    plt.ylabel("Number of samples")
+    plt.title("Distribution of Piazza's score for n={0}".format(top_n))
+    plt.show()
 
     return num_correct / num_total
 
