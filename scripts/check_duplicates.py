@@ -1,9 +1,10 @@
-
+import random
 from data_loader import DataLoader
 from labeler import Labeler
 
 from utils import load_pickle
 
+random.seed(202020)
 
 if __name__ == "__main__":
     posts_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
@@ -21,6 +22,10 @@ if __name__ == "__main__":
 
     # label dataset
     labeler = Labeler('')
+
+    # # randomly select 100
+    # indices = random.sample([i for i in range(len(dupe_check))], 100)
+    # dupe_check = [dupe_check[i] for i in indices]
 
     for curr in dupe_check:
         idx = curr[0]
