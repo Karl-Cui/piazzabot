@@ -11,18 +11,16 @@ if __name__ == "__main__":
     data_loader = DataLoader()
     data_loader.load(posts_path)
 
-    qs, followup_qs = data_loader.questions_in_folder("", include_index=True)
-    print(qs[1])
-
-    as1, followup_as1 = data_loader.questions_in_folder("assignment2", include_index=True)
+    qs, followup_qs = data_loader.questions_in_folder("", index=True)
+    as2, followup_as2 = data_loader.questions_in_folder("assignment2", index=True)
 
     bert_s_s = BertSemanticSearch().from_files(path_corpus, path_corpus_embeddings)
 
     # label dataset
     labeler = Labeler(label_path)
 
-    for i in range(len(as1)):
-        idx, text = as1[i]
+    for i in range(len(as2)):
+        idx, text = as2[i]
         choices_idx = bert_s_s.single_semantic_search(text, 10)
 
         labeler.label(

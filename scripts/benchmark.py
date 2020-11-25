@@ -505,27 +505,33 @@ def piazza_pred(top_n=3):
     num_correct = 0
     num_total = 0
 
+    to_label = []
+
     for i in range(len(a2)):
         idx, _, qid = a2[i]
 
         if dupes_map.get(idx) is not None and matches.get(qid) is not None:
 
-            pred_id = matches[qid]
-            pred_id = [p['id'] for p in pred_id]                # only take ids
-
-            pred_idx = [id_to_idx.get(p, '') for p in pred_id]  # convert from ID to index
-            pred_idx = [p for p in pred_idx if p != '']         # remove invalid entries
-
-            pred_idx = pred_idx[:top_n]                         # filter by top k entries
+            pred_idx = matches[qid]
+            pred_idx = [p['id'] for p in pred_idx]                          # only take ids
+            pred_idx = [id_to_idx[p] for p in pred_idx if p in id_to_idx]   # convert from ID to index
+            pred_idx = pred_idx[:top_n]                                     # filter by top k entries
 
             # see if one of the indices in the top n is a dupe provided that the current question has a dupe
             num_total += 1
+            found_correct = False
 
             for pidx in pred_idx:
                 if pidx in dupes_map[idx]:
                     num_correct += 1
+                    found_correct = True
                     break
 
+            if not found_correct:
+                to_label.append([idx] + pred_idx)
+
+    save_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\dupe_check.pkl"
+    save_pickle(to_label, save_path)
     return num_correct / num_total
 
 
@@ -550,8 +556,8 @@ if __name__ == "__main__":
     0.8735 for BERT
     0.5402 for USE
     """
-    acc = filter_window_bert(top_n=3)
-    print("BERT duplicate accuracy: " + str(acc))
+    # acc = filter_window_bert(top_n=3)
+    # print("BERT duplicate accuracy: " + str(acc))
 
     acc = piazza_pred(top_n=3)
     print("Piazza duplicate accuracy: " + str(acc))
