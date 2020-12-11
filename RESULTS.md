@@ -72,7 +72,7 @@ It seems that longer time windows correspond to higher accuracy. This suggests t
 
 ![](https://github.com/Karl-Cui/piazzabot/blob/master/imgs/time_windows.png)
 
-There is a steep accuracy drop-off if we choose a time window of less than a week, and there does not seem to be too much of a difference if we chose windows of 2 or 3 weeks. Since the amount of extra computation from using a large window is marginal, __we decided to not set a time window and instead search for duplicates in all questions that are already posted.
+There is a steep accuracy drop-off if we choose a time window of less than a week, and there does not seem to be too much of a difference if we chose windows of 2 or 3 weeks. Since the amount of extra computation from using a large window is marginal, __we decided to not set a time window and instead search for duplicates in all questions that are already posted.__
 
 ## Score / Confidence Thresholds
 
