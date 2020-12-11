@@ -106,3 +106,10 @@ n = 10: 0.5064
 
 For comparison, with `n = 3`, our model achieved `0.5690` accuracy, which is __significantly higher than Piazza's.__ Though we determined the the reasons behind why this is, we hypothesize this is due to __BERT being better at interpreting context than Piazza.__ Since BERT is bi-directional, at every point in a question it would have an understanding of the context before and after. Because of this context, through using BERT we may be able to better relate portions of questions, to find duplicates. This is based on our hypothesis that Piazza's recommendations are heavily keyword based and do not consider the context much.
 
+## Future work
+
+In many of these experiments, we did not go very in-depth. There are many avenues of investigation possible for future work:
+- Weighted time windows: weigh the score for a possible duplicate by how long as it was posted. The function for weighting here may be linear to the time gap, but we suspect something like a [sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function) may work better.
+- Investigation into Piazza's recommendation algorithm, whether there are cases where Piazza's algorithm performs better or worse than BERT
+- Using a score threshold that is a function of the scores. For example, filter by all questions that have a similarity score that is 1 standard deviation above the mean similarity score for a post, rather than setting a hard threshold.
+- Fine tuning the model: all of our experiments were performed using a general, pretrained out-of-the-box BERT. We did not fine-tune it since we wanted to preserve the generality of the original BERT, however it would be a worthwhile experiment to try fine-tuning on Piazza posts, or a larger set of question data.
