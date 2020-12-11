@@ -30,6 +30,8 @@ Files for the actual bot can be found under the `bot/` folder. There are two mai
 - `db.py` is code for the database. This is used to check whether there are any new posts on Piazza.
 - `piazza_code.py` is the code for the actual bot, which contains methods for interfacing with Piazza's API, our database, and our model. The `heart_beat()` function is used to check Piazza for new posts, respond accordingly, and update our database's entries.
 
+Note that this is heavily reliant on [Piazza's unofficial API](https://github.com/hfaran/piazza-api/), which we use for posting questions and responses, and editing and deleting posts.
+
 ### Benchmarking different models 
 
 We benchmarked feature generation using:
