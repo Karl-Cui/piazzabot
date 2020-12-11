@@ -118,17 +118,14 @@ class BertSemanticSearch:
         return top_results[0:top_k]
 
 if __name__ == "__main__":
-    csv_file_name = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
-    path_corpus=  r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus_quora.pkl"
-    path_corpus_embeddings=  r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus_embeddings_quora.pkl"
-    #df = pd.read_csv(csv_file_name)
-    #df.dropna(subset=["Submission HTML Removed"], inplace=True)
-    #corpus = df["Submission HTML Removed"].tolist()
+    csv_file_name = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc108h5f_fall2019_2020-05-03\anon.contributions.csv"
+    path_corpus = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc108h5f_fall2019_2020-05-03\corpus.pkl"
+    path_corpus_embeddings = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc108h5f_fall2019_2020-05-03\corpus_embeddings.pkl"
 
     data_loader = DataLoader()
     data_loader.load(csv_file_name)
 
-    qs, followup_qs = data_loader.questions_in_folder("", include_index=False)
+    qs, followup_qs = data_loader.questions_in_folder("", index=False)
 
     bert_s_s = BertSemanticSearch(False)
     bert_s_s.set_corpus(qs)

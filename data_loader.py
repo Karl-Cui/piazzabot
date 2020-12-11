@@ -20,7 +20,7 @@ class DataLoader:
 
         self.data = df
 
-    def questions_in_folder(self, folder, index=False, timestamp=False, subject=False, qid=False):
+    def questions_in_folder(self, folder, index=False, timestamp=False, subject=False, qid=False, post_num=False):
         """
         Return all questions from a folder
 
@@ -29,6 +29,7 @@ class DataLoader:
         :param timestamp: if True will include timestamp with question
         :param subject: if True will include post title with question
         :param qid: if True will include post ID with question
+        :param post_num: if True will include post number with question
         :return: list of questions, list of follow-up (probably) questions
         """
         # filter by posts from a folder
@@ -43,7 +44,8 @@ class DataLoader:
                                                                            index=index,
                                                                            timestamp=timestamp,
                                                                            subject=subject,
-                                                                           qid=qid)
+                                                                           qid=qid,
+                                                                           post_num=post_num)
         return questions, followup_questions
 
     #
@@ -51,7 +53,7 @@ class DataLoader:
     #
 
     @staticmethod
-    def filter_latest_questions(posts, index=True, timestamp=False, subject=False, qid=False):
+    def filter_latest_questions(posts, index=True, timestamp=False, subject=False, qid=False, post_num=False):
         """
         Find questions given a dataframe, and include information from different fields if needed. See
         questions_in_folder() method for list of fields.
@@ -61,9 +63,9 @@ class DataLoader:
 
         # filter by only relevant fields
         if qid:
-            posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At', 'Subject', 'id']]
+            posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At', 'Subject', 'Post Number', 'id']]
         else:
-            posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At', 'Subject']]
+            posts = posts[['Post Number', 'Submission HTML Removed', 'Part of Post', 'Created At', 'Subject', 'Post Number']]
 
         # drop if any field contains invalid values
         posts.dropna(subset=['Submission HTML Removed'], inplace=True)
@@ -75,29 +77,26 @@ class DataLoader:
             # row[3] is part of post
             # row[4] is timestamp
             # row[5] is subject
-            # row[6] is id
+            # row[6] is post number
+            # row[7] is id
 
             if row[3] == "started_off_question" or row[3] == "updated_question":
                 questions[row[1]] = [row[2]]
                 if index:
                     questions[row[1]] = [row[0]] + questions[row[1]]
-                if timestamp:
-                    questions[row[1]].append(row[4])
-                if subject:
-                    questions[row[1]].append(row[5])
-                if qid:
-                    questions[row[1]].append(row[6])
 
-            elif row[3] == "followup":
+                for i, include in enumerate([timestamp, subject, post_num, qid]):
+                    if include:
+                        questions[row[1]].append(row[i+4])
+
+            elif row[3] == "followup" and "?" in row[2]:
                 followup_questions[row[1]] = [row[2]]
                 if index:
                     followup_questions[row[1]] = [row[0]] + followup_questions[row[1]]
-                if timestamp:
-                    followup_questions[row[1]].append(row[4])
-                if subject:
-                    followup_questions[row[1]].append(row[5])
-                if qid:
-                    followup_questions[row[1]].append(row[6])
+
+                for i, include in enumerate([timestamp, subject, post_num, qid]):
+                    if include:
+                        followup_questions[row[1]].append(row[i + 4])
 
         questions = list(questions.values())
         followup_questions = list(followup_questions.values())

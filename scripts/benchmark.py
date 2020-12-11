@@ -9,14 +9,14 @@ from matplotlib import pyplot as plt
 
 
 # paths to preprocessed data, duplicate labels, and embeddings
-posts_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
-preproc_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\data.pkl"
-dupe_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\dupes.pkl"
-piazza_match_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\piazza_pred.json"
+posts_path = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
+preproc_path = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\data.pkl"
+dupe_path = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\dupes.pkl"
+piazza_match_path = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\piazza_pred.json"
 
 # BERT
-bert_corpus = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus.pkl"
-bert_corpus_embeddings = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus_embeddings.pkl"
+bert_corpus = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus.pkl"
+bert_corpus_embeddings = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus_embeddings.pkl"
 
 
 def create_duplicate_map(dupes):
@@ -628,29 +628,46 @@ def compare_bert_and_piazza(top_n=3):
     plt.show()
 
 
-if __name__ == "__main__":
+def followup_duplicates(top_n=3):
     """
-    n = 1
-    ---------------------------------------
-    0.3621 for cosine similarity
-    0.6092 for BERT
-    0.3276 for USE
-    
-    n = 3
-    ---------------------------------------
-    0.5575 for cosine similarity
-    0.8161 for BERT
-    0.8161 for Quora BERT (check that this is actually Quora BERT?)
-    0.4943 for USE
-    
-    n = 5
-    ---------------------------------------
-    0.6264 for cosine similarity
-    0.8735 for BERT
-    0.5402 for USE
+    2019 spring CSC148, n = 3: 0.194
     """
-    # acc = filter_window_bert(top_n=3)
-    # print("BERT duplicate accuracy: " + str(acc))
+    posts_path = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2019_2020-05-03\anon.contributions.csv"
+    data_loader = DataLoader()
+    data_loader.load(posts_path)
 
-    acc = compare_bert_and_piazza(top_n=3)
-    print("Piazza duplicate accuracy: " + str(acc))
+    qs, followup_qs = data_loader.questions_in_folder("", index=True, timestamp=True, post_num=True)
+    qidx = set([q[0] for q in qs])
+
+    # load BERT embeddings
+    bert_corpus = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2019_2020-05-03\corpus.pkl"
+    bert_corpus_embeddings = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2019_2020-05-03\corpus_embeddings.pkl"
+    bert_s_s = BertSemanticSearch().from_files(bert_corpus, bert_corpus_embeddings)
+
+    num_correct = 0
+    num_total = 0
+
+    for followup in followup_qs:
+        idx, text, timestamp, post_num = followup
+        if post_num not in qidx:
+            continue
+
+        timestamp = timestamp.value // 10 ** 9  # convert to seconds
+
+        pred_idx = bert_s_s.single_semantic_search(text, 100)
+        pred_num = [qs[int(pidx)][3] for pidx in pred_idx if
+                    qs[int(pidx)][2].value // 10 ** 9 < timestamp]
+        pred_num = pred_num[:top_n]
+
+        for n in pred_num:
+            if n == post_num:
+                num_correct += 1
+                break
+        num_total += 1
+
+    return num_correct / num_total
+
+
+if __name__ == "__main__":
+    acc = followup_duplicates()
+    print(acc)
