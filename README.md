@@ -10,7 +10,7 @@ The basic workflow is a follows:
     * The question is similar to one of the posts PiazzaBot recommended. The question is instead posted as follow-up to whichever post PiazzaBot recommended.
     * the question is not similar to any of the posts PiazzaBot recommended. The question's visibility gets set to public and will be answered by students, professors, or TAs like usual.
     
-In this project we explore several different NLP algorithms for recommendation and evaluate [how they perform on our Piazza dataset](https://github.com/Karl-Cui/piazzabot/blob/master/README.md), and a bot that does what is outlined above.
+In this project we explore several different NLP algorithms for recommendation and evaluate [how they perform on our Piazza dataset](https://github.com/Karl-Cui/piazzabot/blob/master/RESULTS.md), and a bot that does what is outlined above.
 
 ## Installation
 
