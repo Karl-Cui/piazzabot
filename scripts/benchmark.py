@@ -509,7 +509,6 @@ def piazza_pred(top_n=3):
     #     match.extend(m)
     #
     # plt.hist(match, bins=50, stacked=True)
-    # # plt.legend(["Posts with duplicates", "Posts with no duplicates"])
     # plt.xlabel("Similarity score")
     # plt.ylabel("Number of samples")
     # plt.title("Distribution of Piazza's Prediction Scores")
@@ -535,6 +534,13 @@ def piazza_pred(top_n=3):
 
             pred_idx = matches[qid]
             pred_idx = [(p['score'], p['id']) for p in pred_idx]                         # only take ids
+
+            # # normalize scores using Z dist
+            # scores = [p[0] for p in pred_idx]
+            # avg = np.mean(scores)
+            # std = np.std(scores)
+            # pred_idx = [((p[0] - avg) / std, p[1]) for p in pred_idx]
+
             pred_idx = [(p[0], id_to_idx[p[1]]) for p in pred_idx if p[1] in id_to_idx]  # convert from ID to index
             pred_idx = pred_idx[:top_n]                                                  # filter by top k entries
 
@@ -567,7 +573,7 @@ def piazza_pred(top_n=3):
     # save_path = r"C:\Users\karlc\Documents\ut\_y4\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\dupe_check.pkl"
     # save_pickle(to_label, save_path)
 
-    """Score and duplicate analysis"""
+    # """Score and duplicate analysis"""
     # score_no_dupe = np.array(list(score_no_dupe.values()))
     # score_dupe = np.array(list(score_dupe.values()))
     #
@@ -669,5 +675,5 @@ def followup_duplicates(top_n=3):
 
 
 if __name__ == "__main__":
-    acc = followup_duplicates()
-    print(acc)
+    piazza_pred()
+

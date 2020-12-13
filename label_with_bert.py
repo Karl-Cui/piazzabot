@@ -3,10 +3,10 @@ from data_loader import DataLoader
 from labeler import Labeler
 
 if __name__ == "__main__":
-    posts_path = r"C:\Users\sohai\Documents\Uni 2020\csc392\CSC108&148v2\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
-    path_corpus = r"C:\Users\sohai\Documents\Uni 2020\csc392\CSC108&148v2\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus.pkl"
-    path_corpus_embeddings = r"C:\Users\sohai\Documents\Uni 2020\csc392\CSC108&148v2\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus_embeddings.pkl"
-    label_path = r"C:\Users\sohai\Documents\Uni 2020\csc392\CSC108&148v2\CSC108&148v2\csc148h5_spring2020_2020-05-03\Labeler.pkl"
+    posts_path = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\anon.contributions.csv"
+    path_corpus = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus.pkl"
+    path_corpus_embeddings = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\corpus_embeddings.pkl"
+    label_path = r"C:\Users\karlc\Documents\uoft\CSC492\CSC108&148v2\csc148h5_spring2020_2020-05-03\Labeler.pkl"
 
     data_loader = DataLoader()
     data_loader.load(posts_path)
